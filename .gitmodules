@@ -1,0 +1,3 @@
+[submodule "safehouse"]
+	path = safehouse
+	url = https://github.com/toastmod/safehouse.git

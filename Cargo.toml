@@ -1,9 +1,12 @@
 [workspace]
 resolver = "2"
-members = ["safehouse", "safehouse-debug"]
+members = ["safehouse", "safehouse-debug", "safehouse-engine", "safehouse-gpu"]
 
 [workspace.dependencies]
 # glium = "0.32.1"
 winit = "0.28.7"
 wgpu = { version = "0.18.0", features = ["glsl"] }
 obj-rs = {git = "https://github.com/simnalamburt/obj-rs.git", branch = "main"}
+safehouse-gpu ={ path = "safehouse-gpu" }
+futures = "*"
+image = {version = "0.24", features = ["jpeg","png"]}

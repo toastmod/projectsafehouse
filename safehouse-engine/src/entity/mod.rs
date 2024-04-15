@@ -1,3 +1,3 @@
 pub trait Entity {
-    fn spawn(&mut safehouse_gpu::State);
+    fn spawn(state: &mut safehouse_gpu::State);
 }

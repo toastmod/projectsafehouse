@@ -7,43 +7,6 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'safehouse'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=safehouse",
-                    "--package=safehouse"
-                ],
-                "filter": {
-                    "name": "safehouse",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'safehouse'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=safehouse",
-                    "--package=safehouse"
-                ],
-                "filter": {
-                    "name": "safehouse",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
             "name": "Debug unit tests in library 'safehouse-debug'",
             "cargo": {
                 "args": [
@@ -55,6 +18,211 @@
                 "filter": {
                     "name": "safehouse-debug",
                     "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'imgui-wgpu'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=imgui-wgpu"
+                ],
+                "filter": {
+                    "name": "imgui-wgpu",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'cube'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=cube",
+                    "--package=imgui-wgpu"
+                ],
+                "filter": {
+                    "name": "cube",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'cube'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=cube",
+                    "--package=imgui-wgpu"
+                ],
+                "filter": {
+                    "name": "cube",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'custom-texture'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=custom-texture",
+                    "--package=imgui-wgpu"
+                ],
+                "filter": {
+                    "name": "custom-texture",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'custom-texture'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=custom-texture",
+                    "--package=imgui-wgpu"
+                ],
+                "filter": {
+                    "name": "custom-texture",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'hello-world'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=hello-world",
+                    "--package=imgui-wgpu"
+                ],
+                "filter": {
+                    "name": "hello-world",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'hello-world'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=hello-world",
+                    "--package=imgui-wgpu"
+                ],
+                "filter": {
+                    "name": "hello-world",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'safehouse-engine'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=safehouse-engine"
+                ],
+                "filter": {
+                    "name": "safehouse-engine",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'safehouse-gpu'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=safehouse-gpu"
+                ],
+                "filter": {
+                    "name": "safehouse-gpu",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'hello-triangle'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=hello-triangle",
+                    "--package=safehouse-gpu"
+                ],
+                "filter": {
+                    "name": "hello-triangle",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'hello-triangle'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=hello-triangle",
+                    "--package=safehouse-gpu"
+                ],
+                "filter": {
+                    "name": "hello-triangle",
+                    "kind": "example"
                 }
             },
             "args": [],

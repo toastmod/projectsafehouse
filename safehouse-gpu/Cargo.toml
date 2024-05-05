@@ -10,3 +10,8 @@ wgpu = {workspace = true}
 winit = {workspace = true}
 futures = {workspace = true}
 image = {workspace = true}
+slicebytes = {workspace = true}
+
+[dev-dependencies]
+winit = { workspace = true }
+safehouse-debug = { workspace = true }

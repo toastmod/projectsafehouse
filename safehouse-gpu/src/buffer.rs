@@ -1,33 +1,35 @@
+use std::{borrow::Borrow, rc::Rc};
 
+use crate::State;
+use slicebytes::cast_bytes;
 use wgpu::util::DeviceExt;
-
-use super::{bindings::Binding, State};
 
 pub trait Buffer {
     fn get_buffer(&self) -> &wgpu::Buffer;
 }
 
-pub struct VertexBuffer<T> {
+pub struct VertexBuffer {
     pub buffer: wgpu::Buffer,
-    p: std::marker::PhantomData<T>,
+    pub desc: &'static wgpu::VertexBufferLayout<'static>,
 }
 
 
-impl<T> VertexBuffer<T> {
-    pub fn new(display: &State, data: &[T]) -> Self {
-        let buffer = display.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+impl VertexBuffer {
+    pub fn new<V: crate::vertex::Vertex>(display: &State, data: &[V]) -> Rc<Self> {
+        let desc = wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: unsafe { std::mem::transmute::<&[T], &[u8]>(data) },
+            contents: unsafe { cast_bytes::<V>(data) },
             usage: wgpu::BufferUsages::VERTEX,
-        });
-        VertexBuffer {
+        };
+        let buffer = display.device.create_buffer_init(&desc);
+        Rc::new(VertexBuffer {
             buffer,
-            p: std::marker::PhantomData,
-        }
+            desc: V::desc()
+        })
     }
 }
 
-impl<T> Buffer for VertexBuffer<T> {
+impl Buffer for VertexBuffer {
 
     fn get_buffer(&self) -> &wgpu::Buffer {
         &self.buffer
@@ -45,7 +47,7 @@ impl<T> IndexBuffer<T> {
     pub fn new(display: &State, data: &[T]) -> Self {
         let buffer = display.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: unsafe { std::mem::transmute::<&[T], &[u8]>(data) },
+            contents: unsafe { cast_bytes::<T>(data) },
             usage: wgpu::BufferUsages::INDEX,
         });
         IndexBuffer {
@@ -63,55 +65,76 @@ impl<T> Buffer for IndexBuffer<T> {
 
 }
 
+#[derive(Debug)]
 pub struct Uniform<T> {
     pub buffer: wgpu::Buffer,
     p: std::marker::PhantomData<T>,
 }
 
 impl<T> Uniform<T> {
-    pub fn new(display: &State, data: &[T]) -> Self {
+    pub fn new(display: &State, data: &[T]) -> Rc<Self> {
         let buffer = display.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: unsafe { std::mem::transmute::<&[T], &[u8]>(data) },
+            contents: unsafe { cast_bytes::<T>(data) },
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
-        Uniform {
+        Rc::new(Uniform {
             buffer,
             p: std::marker::PhantomData,
-        }
+        })
     }
 
+    fn get_buffer(&self) -> &wgpu::Buffer {
+        &self.buffer
+    } 
+
     pub fn update(&self, display: &State, data: &[T]) {
-        display.queue.write_buffer(&self.buffer, 0, unsafe { std::mem::transmute::<&[T], &[u8]>(data) });
+        display.queue.write_buffer(&self.buffer, 0, unsafe {cast_bytes(data)} );
     }
 }
 
 impl<T> Buffer for Uniform<T> {
-
     fn get_buffer(&self) -> &wgpu::Buffer {
         &self.buffer
     }
-
 }
 
-impl<T> Binding for Uniform<T> {
-    fn get_binding_resource(&self) -> wgpu::BindingResource {
-        self.buffer.as_entire_binding()
+#[derive(Debug)]
+pub struct UniformPtr<T> {
+   buffer: Rc<Uniform<T>>,
+   data: Box<[T]>,
+}
+
+impl<'a, T: Sized> UniformPtr<T> {
+    pub fn new(display: &State, data: T) -> Self {
+        let ptr = Box::new([data]);
+        UniformPtr {
+            buffer: Uniform::new(display, ptr.as_ref()),
+            data: ptr
+        }
+    }
+
+    pub fn update(&self, display: &State) {
+        self.buffer.update(display, &self.data)
     }
 }
 
-// TODO: if applicable, finish UniformPtr type.
-//pub struct UniformPtr<'a, T> {
-//    buffer: Uniform<T>,
-//    data: &'a mut [T],
-//}
-//
-//impl<'a, T: Sized> UniformPtr<'a, T> {
-//    pub fn new(display: &State, data: &'a mut [T]) -> Self {
-//
-//        UniformPtr {
-//            buffer: Uniform::new(display, data),
-//            data
-//        }
-//    }
-//}
+impl<T> Buffer for UniformPtr<T> {
+
+    fn get_buffer(&self) -> &wgpu::Buffer {
+        &self.buffer.buffer
+    }
+
+}
+
+impl<T: Sized> AsRef<T> for UniformPtr<T> {
+    fn as_ref(&self) -> &T {
+        &self.data[0]
+    }
+}
+
+impl<T: Sized> AsMut<T> for UniformPtr<T> {
+    fn as_mut(&mut self) -> &mut T {
+        &mut self.data[0]   
+    }
+}

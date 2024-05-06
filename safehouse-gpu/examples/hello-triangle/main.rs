@@ -1,7 +1,6 @@
 use std::time::{Duration, Instant};
 
-use safehouse_gpu::{buffer::{Buffer, UniformPtr}, program, vertex::Vertex, winit::{dpi::LogicalSize, event_loop::EventLoop, window::{Window, WindowBuilder}}};
-use wgpu::rwh::HasDisplayHandle;
+use safehouse_gpu::{buffer::{Buffer, UniformPtr}, program, vertex::Vertex, winit::{dpi::LogicalSize, event_loop::EventLoop, window::{WindowBuilder}}};
 
 #[repr(C)]
 #[derive(Debug,Clone,Copy,Default)]
@@ -127,7 +126,7 @@ fn main() {
 
     let mut wobble = safehouse_gpu::buffer::UniformPtr::new(&state, 0f32);
 
-    let bindgroup = state.init_bindgroup_from_pipeline(Some("triangle_pipeline"), 0, &[
+    let bindgroup = state.init_bindgroup_from_pipeline("triangle_pipeline", 0, &[
         wgpu::BindGroupEntry {
             binding: 0,
             resource: wobble.get_buffer().as_entire_binding(),

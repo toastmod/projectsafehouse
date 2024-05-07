@@ -16,7 +16,7 @@ pub struct ModelData {
 impl ModelData {
 
     /// Creates a basic model with a single group of vertices.
-    pub fn create_model<V: crate::gpu::vertex::Vertex>(state: &mut crate::gpu::State, using_pipeline_name: Option<&'static str>, vertices: &[V], with_textures: Option<Vec<gpu::texture::Texture>>) -> ModelData {
+    pub fn create_model<V: crate::gpu::vertex::Vertex>(state: &crate::gpu::State, using_pipeline_name: Option<&'static str>, vertices: &[V], with_textures: Option<Vec<gpu::texture::Texture>>) -> ModelData {
         let bg_entries_heap: Vec<wgpu::BindGroupEntry>;
         let bg = match with_textures.as_ref() {
             Some(textures) => {
@@ -35,8 +35,6 @@ impl ModelData {
             },
             None => None,
         };
-
-
 
         ModelData{
             vertex_buffer: gpu::buffer::VertexBuffer::new(&state, vertices),

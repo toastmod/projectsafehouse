@@ -82,9 +82,11 @@ impl<'window> State<'window> {
         self.resized = true;
     }
 
-    pub fn update_resize(&self) {
+    pub fn update_resize(&mut self) {
         if self.resized {
+            println!("Resizing!");
             self.surface.configure(&self.device, &self.config);
+            self.resized = false;
         }
     }
 
@@ -122,7 +124,7 @@ impl<'window> State<'window> {
         )
     }
 
-    pub fn init_bindgroup_from_pipeline(&mut self, pipeline_name: &str, bindgroup_index: u32, entries: &[wgpu::BindGroupEntry]) -> Option<Rc<wgpu::BindGroup>> {
+    pub fn init_bindgroup_from_pipeline(&self, pipeline_name: &str, bindgroup_index: u32, entries: &[wgpu::BindGroupEntry]) -> Option<Rc<wgpu::BindGroup>> {
         let pipeline_ref = self.get_render_pipeline(pipeline_name)?;
         Some(Rc::new(self.device.create_bind_group(&wgpu::BindGroupDescriptor{
             label: None,

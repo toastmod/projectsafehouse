@@ -3,7 +3,7 @@ use crate::{context::Context, gpu, model::ModelData, scene::{SceneObject, SceneO
 use gpu::wgpu;
 
 pub trait Entity {
-    fn instantiate(engine: &mut crate::Engine<'_>, handle: SceneObjectHandle) -> Self;
+    fn on_instantiate(engine: &mut crate::Engine<'_>, handle: SceneObjectHandle) -> Self;
     fn load_model(state: &mut gpu::State) -> ModelData;
     fn model_name() -> &'static str;
     fn load_pipeline(state: &mut gpu::State) -> Option<Rc<wgpu::RenderPipeline>>;

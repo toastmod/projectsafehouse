@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
 members = ["safehouse-debug", "safehouse-engine", "safehouse-gpu", "imgui-wgpu-rs", "slicebytes", "pong"]
+exclude = ["safehouse"]
 
 [workspace.dependencies]
-# glium = "0.32.1"
 winit = "0.29"
 wgpu = { version = "0.19" }
 obj-rs = {git = "https://github.com/simnalamburt/obj-rs.git", branch = "main"}

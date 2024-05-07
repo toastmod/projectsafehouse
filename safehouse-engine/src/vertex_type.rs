@@ -48,10 +48,19 @@ pub struct ColorVertex {
     pub color: [f32;3],
 }
 
+impl ColorVertex {
+    pub fn new(pos: [f32; 3], color: [f32; 3]) -> Self {
+        Self {
+            pos,
+            color
+        }
+    }
+}
+
 impl crate::gpu::vertex::Vertex for ColorVertex {
     fn desc() -> &'static wgpu::VertexBufferLayout<'static> {
         &wgpu::VertexBufferLayout {
-            array_stride: 0,
+            array_stride: std::mem::size_of::<ColorVertex>() as u64,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {

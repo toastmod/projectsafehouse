@@ -30,7 +30,7 @@ impl Entity for Ball {
         None
     }
     
-    fn instantiate<'w>(engine: &mut engine::Engine<'w>, handle: SceneObjectHandle) -> Self {
+    fn on_instantiate<'w>(engine: &mut engine::Engine<'w>, handle: SceneObjectHandle) -> Self {
         let mut b = Self::default();
         b.scene_handle = handle;
         b

@@ -13,6 +13,13 @@ pub struct Paddle {
 
 impl Entity for Paddle {
 
+    fn on_instantiate<'w>(engine: &mut Engine<'w>, handle: SceneObjectHandle) -> Self {
+        Self {
+            scene_handle: handle,
+            ..Default::default()
+        }
+    }
+
     fn load_model(state: &mut engine::gpu::State) -> ModelData {
         
         ModelData {
@@ -32,13 +39,6 @@ impl Entity for Paddle {
         None
     }
     
-    fn instantiate<'w>(engine: &mut Engine<'w>, handle: SceneObjectHandle) -> Self {
-        Self {
-            scene_handle: handle,
-            ..Default::default()
-        }
-    }
-    
     fn model_name() -> &'static str {
         "paddle"
     }
@@ -53,7 +53,8 @@ impl Paddle {
     pub fn move_to(&mut self, engine: &mut Engine, x: f32, y: f32) {
         let screen_width = engine.gpu_state.config.width;
         let screen_height= engine.gpu_state.config.height;
-        let mut transform = engine.mut_scene_object(self.scene_handle).unwrap().transform_mut();
+        let transform = engine.mut_scene_object(self.scene_handle).unwrap().transform_mut();
         *transform = glam::Mat4::from_translation(glam::vec3(x/screen_width as f32, y/screen_height as f32, 0.0));
+        // println!("mouse moved to {:?}", pong.);
     }
 }

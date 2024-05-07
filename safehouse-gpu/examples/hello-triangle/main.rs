@@ -103,17 +103,16 @@ fn main() {
         }, 
         primitive: wgpu::PrimitiveState { 
             topology: wgpu::PrimitiveTopology::TriangleList, 
-            strip_index_format: None, 
             front_face: wgpu::FrontFace::Cw, 
             polygon_mode: wgpu::PolygonMode::Fill, 
-            cull_mode: Some(wgpu::Face::Back), 
-            unclipped_depth: false, 
-            conservative: false 
+            ..Default::default()
+            // strip_index_format: None, 
+            // cull_mode: Some(wgpu::Face::Back), 
+            // unclipped_depth: false, 
+            // conservative: false 
         }, 
         depth_stencil: None, 
-        multisample: wgpu::MultisampleState {
-            ..Default::default()
-        }, 
+        multisample: wgpu::MultisampleState::default(), 
         fragment: Some(
             wgpu::FragmentState {
                 module: &prog.module,

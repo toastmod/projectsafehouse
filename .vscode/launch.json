@@ -175,6 +175,43 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug example 'hello-sceneobject'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=hello-sceneobject",
+                    "--package=safehouse-engine"
+                ],
+                "filter": {
+                    "name": "hello-sceneobject",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'hello-sceneobject'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=hello-sceneobject",
+                    "--package=safehouse-engine"
+                ],
+                "filter": {
+                    "name": "hello-sceneobject",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in library 'safehouse-gpu'",
             "cargo": {
                 "args": [
@@ -223,6 +260,62 @@
                 "filter": {
                     "name": "hello-triangle",
                     "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'slicebytes'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=slicebytes"
+                ],
+                "filter": {
+                    "name": "slicebytes",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'pong'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=pong",
+                    "--package=pong"
+                ],
+                "filter": {
+                    "name": "pong",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'pong'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=pong",
+                    "--package=pong"
+                ],
+                "filter": {
+                    "name": "pong",
+                    "kind": "bin"
                 }
             },
             "args": [],

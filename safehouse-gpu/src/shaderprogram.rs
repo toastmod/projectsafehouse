@@ -3,7 +3,7 @@ use std::rc::Rc;
 #[macro_export]
 macro_rules! program {
     ($state:expr, source: $src:expr) => {
-        safehouse_gpu::shaderprogram::Program::new(
+        Program::new(
             $state, 
             wgpu::ShaderSource::Wgsl(
                 $src

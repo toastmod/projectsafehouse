@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use safehouse_gpu::{buffer::{Buffer, UniformPtr}, program, vertex::Vertex, winit::{dpi::LogicalSize, event_loop::EventLoop, window::{WindowBuilder}}};
+use safehouse_gpu::{buffer::{Buffer, UniformPtr}, program, shaderprogram::Program, vertex::Vertex, winit::{dpi::LogicalSize, event_loop::EventLoop, window::{WindowBuilder}}};
 
 #[repr(C)]
 #[derive(Debug,Clone,Copy,Default)]
@@ -148,6 +148,8 @@ fn main() {
                     winit::event::WindowEvent::Destroyed => ewt.exit(),
                     winit::event::WindowEvent::CloseRequested => ewt.exit(),
                     winit::event::WindowEvent::RedrawRequested => {
+
+                        state.update_resize();
 
                         if Instant::now().duration_since(last_rendered) >= Duration::from_millis(16) {
 

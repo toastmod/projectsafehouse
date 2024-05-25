@@ -27,6 +27,18 @@ impl VertexBuffer {
             desc: V::desc()
         })
     }
+    pub fn new_from_raw<V: crate::vertex::Vertex>(display: &State, data: &[u8]) -> Rc<Self> {
+        let desc = wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: data,
+            usage: wgpu::BufferUsages::VERTEX,
+        };
+        let buffer = display.device.create_buffer_init(&desc);
+        Rc::new(VertexBuffer {
+            buffer,
+            desc: V::desc()
+        })
+    }
 }
 
 impl Buffer for VertexBuffer {

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["safehouse-debug", "safehouse-engine", "safehouse-gpu", "imgui-wgpu-rs", "slicebytes", "pong"]
+members = ["safehouse-debug", "safehouse-render", "safehouse-gpu", "imgui-wgpu-rs", "slicebytes", "pong", "safehouse-data"]
 exclude = ["safehouse"]
 
 [workspace.dependencies]
@@ -9,7 +9,8 @@ wgpu = { version = "0.19" }
 obj-rs = {git = "https://github.com/simnalamburt/obj-rs.git", branch = "main"}
 safehouse-gpu ={ path = "safehouse-gpu" }
 safehouse-debug ={ path = "safehouse-debug" }
-safehouse-engine ={ path = "safehouse-engine" }
+safehouse-render ={ path = "safehouse-render" }
+safehouse-data ={ path = "safehouse-data" }
 futures = "*"
 image = {version = "0.25.1", features = ["jpeg","png"]}
 imgui = { git = "https://github.com/imgui-rs/imgui-rs.git", rev="cd97e17" }

@@ -1,53 +1,62 @@
-use safehouse_engine::{entity::Entity, model::ModelData, vertex_type::ColorVertex, Engine};
-
+use crate::render::{entity::Entity, model::ModelData, vertex_type::ColorVertex, RenderManager};
 use crate::{ball::Ball, paddle::Paddle};
+
+pub const SCREEN_WIDTH: f32 = 800.0;
+pub const SCREEN_HEIGHT: f32 = 800.0;
+
 
 #[derive(Debug)]
 pub struct Pong {
     player: Paddle,
+    player_score: u8,
     cpu: Paddle,
+    cpu_score: u8,
     ball: Ball,
 }
 
 impl Pong {
     /// Load resources to start the game
-    pub fn load_game(engine: &mut Engine) -> Self {
-        let ball_model = Ball::load_model(&mut engine.gpu_state);
+    pub fn load_game(rm: &mut RenderManager) -> Self {
 
-        engine.add_model(
+        // Example of procedurally loading an entity's data:
+        rm.load_entity::<Paddle>();
+
+        // Example of manually loading an entity's data:
+        let ball_model = Ball::load_model(&mut rm.gpu_state);
+
+        rm.add_model(
             "ball",
             ball_model 
         );
 
-        let paddle_model = ModelData::create_model::<ColorVertex>(
-                &mut engine.gpu_state,
-            None,
-            &[
-                ColorVertex { pos: [-1.0,1.0,0.0], color: [1.0,0.0,0.0] },
-                ColorVertex { pos: [1.0,1.0,0.0], color: [0.0,1.0,0.0] },
-                ColorVertex { pos: [1.0,-1.0,0.0], color: [0.0,0.0,1.0] },
-
-                ColorVertex { pos: [1.0,-1.0,0.0], color: [0.0,0.0,1.0] },
-                ColorVertex { pos: [-1.0,-1.0,0.0], color: [0.0,1.0,0.0] },
-                ColorVertex { pos: [-1.0,1.0,0.0], color: [1.0,0.0,0.0] }
-            ],
-            None 
-        );
-
-        engine.add_model(
-            "paddle",
-            paddle_model
-        );
-
+        // Spawn the scene objects and serve.
         Self {
-            player: engine.spawn_sceneobject_entity::<Paddle>("Player"),
-            cpu: engine.spawn_sceneobject_entity::<Paddle>("CPU"),
-            ball: Ball::default(),
+            player: rm.spawn_sceneobject_entity::<Paddle>("Player"),
+            cpu: rm.spawn_sceneobject_entity::<Paddle>("CPU"),
+            ball: rm.spawn_sceneobject_entity::<Ball>("Ball"),
+            player_score: 0,
+            cpu_score: 0,
         }
 
     }
 
-    pub fn mouse_moved(&mut self, engine: &mut Engine, x: f32, y: f32) {
-        self.player.move_to(engine, x, y)
+    /// On game start
+    pub fn init(&mut self, rm: &mut RenderManager) {
+
+        // Move player paddle to left center
+        self.player.move_to(rm, 0.0, SCREEN_HEIGHT/2.0);
+
+        // Move CPU paddle to right center
+        self.cpu.move_to(rm, SCREEN_WIDTH, SCREEN_HEIGHT/2.0);
+
+    }
+
+    pub fn mouse_moved(&mut self, rm: &mut RenderManager, x: f32, y: f32) {
+        self.player.move_to(rm, 0.0, y);
+    }
+
+    pub fn update(&mut self, rm: &mut RenderManager) {
+        self.ball.update(rm);
+
     }
 }

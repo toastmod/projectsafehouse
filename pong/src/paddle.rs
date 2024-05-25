@@ -1,46 +1,108 @@
 use std::rc::Rc;
 
-use engine::{entity::Entity, gpu::wgpu, model::ModelData, scene::SceneObjectHandle, vertex_type::ColorVertex, Engine};
+use crate::render;
+use render::{BINDGROUP_GLOBAL, BINDGROUP_SCENEOBJECT, entity::Entity, glam, gpu::{self, buffer::UniformPtr, program}, model::ModelData, scene::SceneObjectHandle, vertex_type::{AdvVertex, ColorVertex}, RenderManager};
+use gpu::{vertex::Vertex, wgpu,shaderprogram::Program};
 
-use crate::engine;
-use engine::glam;
 
-#[derive(Debug,Default)]
+#[derive(Debug)]
 pub struct Paddle {
     scene_handle: SceneObjectHandle, 
-    xwidth: f32, 
+    color: UniformPtr<[f32; 3]>,
 }
 
 impl Entity for Paddle {
 
-    fn on_instantiate<'w>(engine: &mut Engine<'w>, handle: SceneObjectHandle) -> Self {
+    fn on_instantiate<'w>(rm: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
         Self {
             scene_handle: handle,
-            ..Default::default()
+            color: UniformPtr::new(&rm.gpu_state, [0.0, 1.0, 0.0])
         }
     }
 
-    fn load_model(state: &mut engine::gpu::State) -> ModelData {
-        
+    fn load_model(state: &mut gpu::State) -> ModelData {
+        let model_bytes = include_bytes!("model/paddle.dat");
         ModelData {
-            vertex_buffer: engine::gpu::buffer::VertexBuffer::new(&state, &[
-                ColorVertex { pos: [0.0,0.5,0.0], color: [1.0,0.0,0.0]},
-                ColorVertex { pos: [0.5,-0.5,0.0], color: [0.0,1.0,0.0]},
-                ColorVertex { pos: [-0.5,-0.5,0.0], color: [0.0,0.0,1.0]},
-            ]),
+            vertex_buffer: gpu::buffer::VertexBuffer::new_from_raw::<ColorVertex>(&state, model_bytes),
             textures: None,
             model_bindgroup: None,
-            groups: Box::new([0..3])
+            groups: Box::new([
+                0..(model_bytes.len()/std::mem::size_of::<ColorVertex>()) as u32
+            ])
         }
-        
     }
 
-    fn load_pipeline(state: &mut safehouse_engine::gpu::State) -> Option<Rc<wgpu::RenderPipeline>> {
-        None
+    fn load_pipeline(state: &mut gpu::State) -> Option<Rc<wgpu::RenderPipeline>> {
+
+        let shader = &state.get_shader("default").module;
+
+        let s = state.add_shader("shader_paddle", program!(
+            state,
+            source: format!("
+
+            @binding({BINDGROUP_GLOBAL}) @group(0)
+            var<uniform> time: f32;
+
+            @binding({BINDGROUP_SCENEOBJECT}) @group(0)
+            var<uniform> model_mat: mat4x4<f32>;
+
+            struct VIn {{
+                @location(0)
+                pos: vec4<f32>,
+                @location(1)
+                col: vec4<f32>
+            }}
+            struct VOut {{
+                @builtin(position)
+                pos: vec4<f32>,
+                @location(0)
+                col: vec4<f32>
+            }}
+
+            @vertex
+            fn vs_main(i: VIn) -> VOut {{
+                var o: VOut;
+                o.pos = i.pos;
+                o.col = i.col;
+                return o;
+            }}
+
+            @fragment
+            fn fs_main(i: VOut) -> @location(0) vec4<f32> {{
+                return i.col;
+            }}
+            ")
+        ));
+
+        Some(state.add_render_pipeline("paddle", &wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: None,
+            vertex: wgpu::VertexState {
+                module: shader,
+                entry_point: "vs_main",
+                buffers: &[ColorVertex::desc().clone()]
+            },
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            fragment: Some(wgpu::FragmentState{
+                module: shader,
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState{
+                    format: state.config.format.clone(),
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::all(),
+                })],
+            }),
+            multiview: None
+        }))
     }
     
     fn model_name() -> &'static str {
-        "paddle"
+        "model_paddle"
     }
     
     fn pipeline_name() -> &'static str {
@@ -50,11 +112,18 @@ impl Entity for Paddle {
 }
 
 impl Paddle {
-    pub fn move_to(&mut self, engine: &mut Engine, x: f32, y: f32) {
-        let screen_width = engine.gpu_state.config.width;
-        let screen_height= engine.gpu_state.config.height;
-        let transform = engine.mut_scene_object(self.scene_handle).unwrap().transform_mut();
-        *transform = glam::Mat4::from_translation(glam::vec3(x/screen_width as f32, y/screen_height as f32, 0.0));
-        // println!("mouse moved to {:?}", pong.);
+    /// In this specific implementation, we are assuming a static screen size with no resizing.
+    /// Therefore our game logic will use window coordinates, which we will convert to screen coords.
+    pub fn move_to(&mut self, rm: &mut RenderManager, x: f32, y: f32) {
+        let (x, y) = rm.window_to_world_coord(x, y);
+        let transform = rm.mut_scene_object(self.scene_handle).unwrap().transform_mut();
+        transform.w_axis.x = x; 
+        transform.w_axis.y = -y; 
+    }
+
+    /// Set the color for the paddle.
+    pub fn set_color(&mut self, rm: &mut RenderManager, rgb: [f32; 3]) {
+        *self.color.as_mut() = rgb;
+        self.color.update(&rm.gpu_state);
     }
 }

@@ -1,48 +1,26 @@
-use std::{collections::HashMap, marker::PhantomData, num::NonZeroU64, rc::Rc, time::Instant};
+pub use super::bindgroups::{
+    BINDGROUP_GLOBAL,
+    BINDGROUP_SCENEOBJECT,
+    BINDGROUP_MODEL,
+    BINDGROUP_ENTITY
+};
+use std::{collections::HashMap, rc::Rc, time::Instant};
 
-use context::Context;
-use entity::Entity;
-use gpu::{buffer::{Buffer, UniformPtr}, program, vertex::Vertex};
-use model::{obj, ModelData};
+use crate::camera::Camera;
+use crate::controller::Controller;
+use crate::entity::Entity;
+use gpu::{buffer::{Buffer, UniformPtr}, program, shaderprogram::Program, vertex::Vertex};
+use crate::model::ModelData;
 
 pub use safehouse_gpu as gpu;
 pub use glam; 
-use scene::{SceneObject, SceneObjectHandle};
-use shader::Shader;
+use crate::scene::{SceneObject, SceneObjectHandle, ControllerHandle};
+use crate::shader::Shader;
 
 use gpu::wgpu;
 use tagmap::TagMap;
 
-pub mod entity;
-pub mod model;
-pub mod scene;
-pub mod vertex_type;
-pub mod shader;
-pub mod context;
-pub mod camera;
-pub mod controller;
-pub mod utils;
-
-/// Bindings used by all shaders, governed by the engine.\
-/// E.g: time, camera, debug flags, etc.
-pub const GLOBAL: u32 = 0;
-
-// /// Bindings used by all shaders, governed by the engine.\
-// /// E.g: time, camera, debug flags, etc.
-// pub const CONTEXT: u32 = 1;
-
-
-/// Bindings for shader specific options.
-pub const SCENEOBJECT: u32 = 1;
-
-/// Bindings to model data.\
-/// E.g: textures, skeleton animation variables, etc.
-pub const MODEL: u32 = 2;
-
-/// Bindings for GPU-side updates of an entity.
-pub const ENTITY: u32 = 3;
-
-pub struct Engine<'window> {
+pub struct RenderManager<'window> {
 
     pub window: &'window gpu::winit::window::Window,
     
@@ -71,38 +49,42 @@ pub struct Engine<'window> {
     scene_queue: Vec<usize>,
 
     /// Cache for currently loaded shaders.
+    /// TODO: Implement Shader functionalities
     shader_cache: HashMap<String, Rc<Shader>>,
 
     pub time: UniformPtr<f32>,
 
     pub start_instant: Instant,
 
-    // TODO: The contextual data of the program. 
-    // context: &'context mut C,
+    pub last_render_instant: Instant,
+
+    pub camera: Camera,
+
+    pub controllers: TagMap<Controller>
 
 }
 
-impl<'w> Engine<'w> {
+impl<'w> RenderManager<'w> {
     pub fn new(window: &'w gpu::winit::window::Window) -> Self {
         let mut gpu_state = gpu::State::new(window);
 
         let shader = gpu_state.add_shader("default", program!(
             &gpu_state,
             source: format!("
-                @group({GLOBAL}) @binding(0)
+                @group({BINDGROUP_GLOBAL}) @binding(0)
                 var<uniform> time: f32;
 
-                @group({SCENEOBJECT}) @binding(0)
+                @group({BINDGROUP_SCENEOBJECT}) @binding(0)
                 var<uniform> model_mat: mat4x4<f32>;
 
                 struct ColorVertexInput {{
-                    @location(0) pos: vec3<f32>,
-                    @location(1) color: vec3<f32>,
+                    @location(0) pos: vec4<f32>,
+                    @location(1) color: vec4<f32>,
                 }}
 
                 struct ColorVertexOutput {{
                     @builtin(position) pos: vec4<f32>,
-                    @location(0) color: vec3<f32>,
+                    @location(0) color: vec4<f32>,
                 }}
 
                 @vertex
@@ -110,13 +92,13 @@ impl<'w> Engine<'w> {
                     var o: ColorVertexOutput;
                     o.color = i.color;
                     var t = time;
-                    o.pos = vec4<f32>(i.pos.x, i.pos.y+(sin(time)*0.1), i.pos.z, 1.0) * model_mat;
+                    o.pos = model_mat * vec4<f32>(i.pos.x, i.pos.y+(sin(time)*0.1), i.pos.z, i.pos.w);
                     return o;
                 }}
 
                 @fragment
                 fn fs_main(iv: ColorVertexOutput) -> @location(0) vec4<f32> {{
-                    return vec4<f32>(iv.color.x,iv.color.y,iv.color.z,1.0);
+                    return vec4<f32>(iv.color.x,iv.color.y,iv.color.z,iv.color.w);
                 }}
             ")
         ));
@@ -150,7 +132,7 @@ impl<'w> Engine<'w> {
 
         let time = UniformPtr::new(&gpu_state, 0.0f32);
 
-        let global_bindgroup = gpu_state.init_bindgroup_from_pipeline("default", crate::GLOBAL, &[
+        let global_bindgroup = gpu_state.init_bindgroup_from_pipeline("default", BINDGROUP_GLOBAL, &[
             wgpu::BindGroupEntry {
                 binding: 0,
                 resource: time.get_buffer().as_entire_binding(),
@@ -158,6 +140,10 @@ impl<'w> Engine<'w> {
         ]).expect("Could not create bindgroup!");
 
         let start_instant = Instant::now();
+
+        let camera = Camera::new(gpu_state.config.width as f32, gpu_state.config.height as f32);
+
+        let mut controllers = TagMap::new();
 
         Self {
             global_bindgroup,
@@ -172,11 +158,15 @@ impl<'w> Engine<'w> {
             default_pipeline,
             window,
             start_instant,
+            camera,
+            controllers,
+            last_render_instant: Instant::now()
         }
 
     }
 
-    pub fn update_delta_time(&mut self) {
+    /// Update the amount of time elapsed since the renderer started.
+    pub fn update_time(&mut self) {
         *self.time.as_mut() = self.start_instant.elapsed().as_secs_f32();
     }
 
@@ -200,7 +190,7 @@ impl<'w> Engine<'w> {
             });
 
             // Set global bindgroup
-            renderpass.set_bind_group(crate::GLOBAL, &self.global_bindgroup, &[]);
+            renderpass.set_bind_group(BINDGROUP_GLOBAL, &self.global_bindgroup, &[]);
 
             // update globals
             self.time.update(&self.gpu_state);
@@ -208,24 +198,32 @@ impl<'w> Engine<'w> {
             // Render each SceneObject
             for objhandle in &self.scene_queue {
 
+                // Get object reference
                 let obj = self.get_scene_object(*objhandle).unwrap();
 
+                // Update model matrix only at render time (now)
                 obj.update_matrix(&self.gpu_state);
-
-                renderpass.set_vertex_buffer(0, obj.model_data.vertex_buffer.buffer.slice(..));
-
+                
+                // Set the SceneObject bindgroup for this object
+                renderpass.set_bind_group(BINDGROUP_SCENEOBJECT, &obj.sceneobject_bindgroup, &[]);
+                
+                // Set model BG if there is one
                 if let Some(mbg) = obj.model_data.model_bindgroup.as_ref() {
-                    renderpass.set_bind_group(crate::MODEL, mbg, &[]);
+                    renderpass.set_bind_group(BINDGROUP_MODEL, mbg, &[]);
+
+                    // Entity BG should only be active if it's model is, otherwise it wouldn't make sense to use the shader.
+                    if let Some(ebg) = obj.entity_bindgroup.as_ref() {
+                        renderpass.set_bind_group(BINDGROUP_ENTITY, ebg, &[]);
+                    }
                 }
 
-                if let Some(ebg) = obj.entity_bindgroup.as_ref() {
-                    renderpass.set_bind_group(crate::ENTITY, ebg, &[]);
-                }
-
-                renderpass.set_bind_group(crate::SCENEOBJECT, &obj.sceneobject_bindgroup, &[]);
-
+                // Set the model's vertex buffer
+                renderpass.set_vertex_buffer(0, obj.model_data.vertex_buffer.buffer.slice(..));
+                
+                // Set the entity's pipeline type
                 renderpass.set_pipeline(obj.pipeline_ref.as_ref().unwrap_or(&self.default_pipeline));
 
+                // Render each group of vertices
                 for group in obj.model_data.groups.iter().cloned() {
                     renderpass.draw(group, 0..1);
                 }
@@ -238,10 +236,20 @@ impl<'w> Engine<'w> {
 
     }
 
+    pub fn add_controller(&mut self) -> ControllerHandle {
+        self.controllers.add(Controller::new(None))
+    }
+
     pub fn add_model(&mut self, model_name: &str, model_data: ModelData) -> Rc<ModelData> {
         let r = Rc::new(model_data);
         self.model_data_cache.insert(String::from(model_name), Rc::clone(&r));
         r
+    }
+
+    pub fn load_entity<E: Entity>(&mut self) {
+        let model = E::load_model(&mut self.gpu_state);
+        self.add_model(E::model_name(), model);
+        E::load_pipeline(&mut self.gpu_state);
     }
 
     pub fn add_scene_object(&mut self, object_name: &str, using_model: &str, using_pipeline: &str) -> SceneObjectHandle {
@@ -264,7 +272,7 @@ impl<'w> Engine<'w> {
         //     ],
         // });
 
-        let sceneobject_bindgroup = self.gpu_state.init_bindgroup_from_pipeline(using_pipeline, crate::SCENEOBJECT, &[
+        let sceneobject_bindgroup = self.gpu_state.init_bindgroup_from_pipeline(using_pipeline, BINDGROUP_SCENEOBJECT, &[
             wgpu::BindGroupEntry {
                 binding: 0,
                 resource: model_matrix.get_buffer().as_entire_binding(),
@@ -335,5 +343,29 @@ impl<'w> Engine<'w> {
     //     self.active_entities.push(sceneobject_entity);
 
     // }
+
+    /// Window width
+    pub fn w_width(&self) -> f32 {
+        self.gpu_state.config.width as f32
+    }
+
+    /// Window height
+    pub fn w_height(&self) -> f32 {
+        self.gpu_state.config.height as f32
+    }
+
+    pub fn world_to_window_coord(&self, x: f32, y: f32) -> (f32,f32) {
+        (
+            ((x+1.0)/2.0)*self.w_width(),
+            -((y+1.0)/2.0)*self.w_height()
+        )
+    }
+
+    pub fn window_to_world_coord(&self, x: f32, y: f32) -> (f32,f32) {
+        (
+            ((x/self.w_width())*2.0)-1.0,
+            ((y/self.w_height())*2.0)-1.0
+        )
+    }
 
 }

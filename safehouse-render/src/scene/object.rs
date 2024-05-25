@@ -26,6 +26,10 @@ impl SceneObject {
         self.model_matrix.as_mut()
     }
 
+    pub fn transform_ref(&self) -> &glam::Mat4 {
+        self.model_matrix.as_ref()
+    }
+
     pub(crate) fn update_matrix(&self, state: &safehouse_gpu::State) {
         self.model_matrix.update(state);
     }

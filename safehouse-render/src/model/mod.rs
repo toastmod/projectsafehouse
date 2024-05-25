@@ -1,7 +1,7 @@
+pub mod d2;
+
 use crate::gpu;
 use std::{ops::Range, rc::Rc};
-
-pub mod obj;
 
 use gpu::wgpu;
 use safehouse_gpu::buffer::VertexBuffer;
@@ -29,7 +29,7 @@ impl ModelData {
                 
                 Some(state.init_bindgroup_from_pipeline(
                     using_pipeline_name.unwrap_or("default"), 
-                    crate::MODEL, 
+                    crate::BINDGROUP_MODEL, 
                     bg_entries_heap.as_slice() 
                 ).expect("Could not create bind group!"))
             },

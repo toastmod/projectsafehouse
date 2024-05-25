@@ -1,0 +1,73 @@
+use obj::raw::parse_obj;
+use crate::gpu;
+
+const fn size_calc(data: &'static [u8]) -> usize {
+
+    let bunny = parse_obj(data).unwrap();
+
+    bunny.material_libraries.iter().for_each(|x| println!("\tMaterial Library: \"{}\"", x));
+
+    let mut size = 0usize; 
+
+    let mut iter = bunny.groups.iter().enumerate();
+
+    while let Some((i,(n,g))) = iter.next() {
+        let mut g_iter = g.polygons.iter();
+        while let Some(r) = g_iter.next() {
+            let mut p_iter = bunny.polygons.iter();
+            while let Some(p) = p_iter.next() {
+                size += match p {
+                    obj::raw::object::Polygon::P(ind) => ind.len(),
+                    obj::raw::object::Polygon::PT(ind) => ind.len(),
+                    obj::raw::object::Polygon::PN(ind) => ind.len(),
+                    obj::raw::object::Polygon::PTN(ind) => ind.len(),
+                };
+            }
+        }
+    }
+
+    size
+
+}
+
+pub fn build_obj<'a>( data: &'static [u8]) {
+    // let test_texture = gpu::texture::Texture::load_hardcoded(display, &model_data.iter().find(|x| x.0 == "test").unwrap().2[0].1);
+    let bunny = parse_obj(data).unwrap();
+
+    println!("{:?}", bunny.param_vertices);
+
+    bunny.material_libraries.iter().for_each(|x| println!("\tMaterial Library: \"{}\"", x));
+
+    for (groupid, (name, group)) in bunny.groups.iter().enumerate() {
+        // let name_parsed = name.replace("_Mesh", "");
+        println!("\tLoading group: \"{}\"", name);
+
+        let mut indices = vec![];
+
+        for polyrange in &group.polygons {
+            for poly in &bunny.polygons[polyrange.start..polyrange.end] {
+                let mut pos = (0.0, 0.0, 0.0, 0.0);
+                let mut tex = (0.0, 0.0, 0.0);
+                let mut nor = (0.0, 0.0, 0.0);
+                match poly {
+                    obj::raw::object::Polygon::P(indices) => {
+
+                    },
+                    obj::raw::object::Polygon::PT(indices) => {
+
+                    },
+                    obj::raw::object::Polygon::PN(indices) => {
+
+                    },
+                    obj::raw::object::Polygon::PTN(indices) => {
+
+                    },
+                };
+
+
+
+            }
+        }
+    }
+
+}

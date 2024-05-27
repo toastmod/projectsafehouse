@@ -125,7 +125,7 @@ fn main() {
 
     let mut wobble = safehouse_gpu::buffer::UniformPtr::new(&state, 0f32);
 
-    let bindgroup = state.init_bindgroup_from_pipeline("triangle_pipeline", 0, &[
+    let bindgroup = state.init_bindgroup_from_pipeline("triangle_pipeline", "triangle_bindgroup", 0, &[
         wgpu::BindGroupEntry {
             binding: 0,
             resource: wobble.get_buffer().as_entire_binding(),

@@ -1,4 +1,4 @@
-use crate::dataunit::*;
+use crate::{buffer::Bindable, dataunit::*};
 // use glium::glutin::surface::WindowSurface;
 // use glium::{Display, Program};
 use std::rc::Rc;
@@ -19,6 +19,25 @@ pub struct Texture {
     texture: Rc<wgpu::Texture>,
     // sampler: Rc<wgpu::Sampler>,
     pub view: Rc<wgpu::TextureView>
+}
+
+impl Bindable for Texture {
+    fn get_layout_entry(slot: u32, visibility: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
+            binding: slot,
+            visibility,
+            ty: wgpu::BindingType::Texture {
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                view_dimension: wgpu::TextureViewDimension::D2,
+                multisampled: false 
+            },
+            count: None 
+        }
+    }
+
+    fn get_binding_entry(&self, slot: u32) -> wgpu::BindGroupEntry {
+        wgpu::BindGroupEntry { binding: slot, resource: wgpu::BindingResource::TextureView(&self.view) }
+    }
 }
 
 impl Texture {

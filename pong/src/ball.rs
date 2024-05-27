@@ -11,10 +11,10 @@ pub struct Ball {
 
 impl Entity for Ball {
 
-    fn load_model(state: &mut gpu::State) -> ModelData {
-        
-        ModelData {
-            vertex_buffer: gpu::buffer::VertexBuffer::new(&state, &[
+    fn load_model(rm: &mut RenderManager) -> Option<Rc<ModelData>> {
+        Some(rm.add_model(
+            &Self::model_name(), 
+            gpu::buffer::VertexBuffer::new(&rm.gpu_state, &[
                 ColorVertex { pos: [-0.01,0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
                 ColorVertex { pos: [0.01,0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
                 ColorVertex { pos: [0.01,-0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
@@ -23,17 +23,15 @@ impl Entity for Ball {
                 ColorVertex { pos: [-0.01,-0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
                 ColorVertex { pos: [-0.01,0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
             ]),
-            textures: None,
-            model_bindgroup: None,
-            groups: Box::new([0..6])
-        }
-        
+            None, 
+            Box::new([0..6])
+        ))
     }
 
-    fn load_pipeline(_: &mut gpu::State) -> Option<Rc<wgpu::RenderPipeline>> {
-        None
+    fn load_pipeline<'a>(rm: &'a RenderManager, shader_module: &'a wgpu::ShaderModule) -> render::entity::EntityPipeline<'a> {
+        render::entity::EntityPipeline::Default 
     }
-    
+
     fn on_instantiate<'w>(_: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
         let mut b = Self::default();
         b.vx = 0.0;
@@ -42,13 +40,18 @@ impl Entity for Ball {
         b
     }
     
-    fn model_name() -> &'static str {
+    fn entity_type_name() -> &'static str {
         "ball"
     }
     
-    fn pipeline_name() -> &'static str {
-        "default"
+    fn load_entity_bindings<'inactive, 'active>() -> Vec<safehouse_render::entity::EntityLayoutEntry<'inactive, 'active, Self>> {
+        vec![]
     }
+    
+    fn load_shader<'a>(rm: &'a safehouse_render::RenderManager) -> Option<gpu::shaderprogram::Program> {
+        None
+    }
+    
     
 }
 

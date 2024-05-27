@@ -4,7 +4,6 @@ use crate::{ball::Ball, paddle::Paddle};
 pub const SCREEN_WIDTH: f32 = 800.0;
 pub const SCREEN_HEIGHT: f32 = 800.0;
 
-
 #[derive(Debug)]
 pub struct Pong {
     player: Paddle,
@@ -18,16 +17,9 @@ impl Pong {
     /// Load resources to start the game
     pub fn load_game(rm: &mut RenderManager) -> Self {
 
-        // Example of procedurally loading an entity's data:
+        // Procedurally loading the entity data
         rm.load_entity::<Paddle>();
-
-        // Example of manually loading an entity's data:
-        let ball_model = Ball::load_model(&mut rm.gpu_state);
-
-        rm.add_model(
-            "ball",
-            ball_model 
-        );
+        rm.load_entity::<Ball>();
 
         // Spawn the scene objects and serve.
         Self {
@@ -44,9 +36,11 @@ impl Pong {
     pub fn init(&mut self, rm: &mut RenderManager) {
 
         // Move player paddle to left center
+        self.player.set_color(rm, [1.0,0.0,0.0]);
         self.player.move_to(rm, 0.0, SCREEN_HEIGHT/2.0);
 
         // Move CPU paddle to right center
+        self.cpu.set_color(rm, [0.0,0.0,1.0]);
         self.cpu.move_to(rm, SCREEN_WIDTH, SCREEN_HEIGHT/2.0);
 
     }

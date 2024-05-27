@@ -92,8 +92,8 @@ impl<'window> State<'window> {
 
     // TODO: log replacements when adding items 
 
-    pub fn add_render_pipeline(&mut self, pipeline_name: &str, desc: &wgpu::RenderPipelineDescriptor) -> Rc<wgpu::RenderPipeline> {
-        let rp = Rc::new(self.device.create_render_pipeline(desc));
+    pub fn add_render_pipeline(&mut self, pipeline_name: &str, desc: wgpu::RenderPipelineDescriptor) -> Rc<wgpu::RenderPipeline> {
+        let rp = Rc::new(self.device.create_render_pipeline(&desc));
         self.render_pipelines.insert(String::from(pipeline_name), Rc::clone(&rp));
         rp
     }
@@ -124,10 +124,10 @@ impl<'window> State<'window> {
         )
     }
 
-    pub fn init_bindgroup_from_pipeline(&self, pipeline_name: &str, bindgroup_index: u32, entries: &[wgpu::BindGroupEntry]) -> Option<Rc<wgpu::BindGroup>> {
+    pub fn init_bindgroup_from_pipeline(&self, pipeline_name: &str, bg_name: &str, bindgroup_index: u32, entries: &[wgpu::BindGroupEntry]) -> Option<Rc<wgpu::BindGroup>> {
         let pipeline_ref = self.get_render_pipeline(pipeline_name)?;
         Some(Rc::new(self.device.create_bind_group(&wgpu::BindGroupDescriptor{
-            label: None,
+            label: Some(bg_name),
             layout: &pipeline_ref.get_bind_group_layout(bindgroup_index),
             entries
         })))

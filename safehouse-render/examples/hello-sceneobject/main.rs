@@ -1,4 +1,5 @@
 use std::time::{Duration, Instant};
+use safehouse_gpu::buffer::VertexBuffer;
 pub use safehouse_render as render;
 use render::{RenderManager, gpu::winit, model::ModelData, vertex_type::ColorVertex};
 use winit::{dpi::{LogicalSize, Size}, event_loop::EventLoop, window::WindowBuilder};
@@ -14,16 +15,16 @@ fn main() {
 
     let mut rm = RenderManager::new(&window); 
 
-    rm.add_model("triangle", ModelData::create_model(
-        &rm.gpu_state, 
-        None, 
-        &[
+    rm.add_model( 
+        "triangle",
+        VertexBuffer::new(&rm.gpu_state,&[
             ColorVertex::new([0.0,0.5,0.0,1.0],[1.0,0.0,0.0,1.0]),
             ColorVertex::new([0.5,-0.5,0.0,1.0],[0.0,1.0,0.0,1.0]),
             ColorVertex::new([-0.5,-0.5,0.0,1.0],[0.0,0.0,1.0,1.0]),
-        ], 
-        None
-    ));
+        ]),
+        None,
+        Box::new([0..3])
+    );
 
     rm.add_scene_object("test triangle", "triangle", "default");
 

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["safehouse-debug", "safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data"]
+members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data"]
 exclude = ["safehouse"]
 
 [workspace.dependencies]

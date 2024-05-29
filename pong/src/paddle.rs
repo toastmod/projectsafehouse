@@ -1,8 +1,9 @@
 use std::rc::Rc;
 
 use crate::render;
-use render::{BINDGROUP_GLOBAL, BINDGROUP_SCENEOBJECT, entity::Entity, glam, gpu::{self, buffer::UniformPtr, program}, model::ModelData, scene::SceneObjectHandle, vertex_type::{AdvVertex, ColorVertex}, RenderManager};
+use render::{BINDGROUP_GLOBAL, BINDGROUP_SCENEOBJECT, BINDGROUP_ENTITY, entity::Entity, glam, gpu::{self, buffer::UniformPtr, program}, model::ModelData, scene::SceneObjectHandle, vertex_type::{AdvVertex, ColorVertex}, RenderManager};
 use gpu::{vertex::Vertex, wgpu,shaderprogram::Program};
+use safehouse_render::gpu::buffer::Buffer;
 
 
 #[derive(Debug)]
@@ -14,9 +15,20 @@ pub struct Paddle {
 impl Entity for Paddle {
 
     fn on_instantiate<'w>(rm: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
+        let color = UniformPtr::new(&rm.gpu_state, [0.0, 1.0, 0.0]);
+
+        // create bindgroup
+        let bindgroup = rm.gpu_state.init_bindgroup_from_pipeline(Self::pipeline_name(), BINDGROUP_ENTITY, &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: color.get_buffer().as_entire_binding()
+            }
+        ]).expect("Could not create bindgroup!");
+        rm.mut_scene_object(handle).unwrap().attach_entity_bindgroup(bindgroup); 
+
         Self {
             scene_handle: handle,
-            color: UniformPtr::new(&rm.gpu_state, [0.0, 1.0, 0.0])
+            color
         }
     }
 
@@ -34,17 +46,18 @@ impl Entity for Paddle {
 
     fn load_pipeline(state: &mut gpu::State) -> Option<Rc<wgpu::RenderPipeline>> {
 
-        let shader = &state.get_shader("default").module;
-
-        let s = state.add_shader("shader_paddle", program!(
+        let shader = state.add_shader("paddle_shader", program!(
             state,
             source: format!("
 
-            @binding({BINDGROUP_GLOBAL}) @group(0)
+            @group({BINDGROUP_GLOBAL}) @binding(0)
             var<uniform> time: f32;
 
-            @binding({BINDGROUP_SCENEOBJECT}) @group(0)
+            @group({BINDGROUP_SCENEOBJECT}) @binding(0)
             var<uniform> model_mat: mat4x4<f32>;
+
+            @group({BINDGROUP_ENTITY}) @binding(0)
+            var<uniform> paddle_color: vec3<f32>;
 
             struct VIn {{
                 @location(0)
@@ -62,8 +75,8 @@ impl Entity for Paddle {
             @vertex
             fn vs_main(i: VIn) -> VOut {{
                 var o: VOut;
-                o.pos = i.pos;
-                o.col = i.col;
+                o.pos = model_mat * i.pos;
+                o.col = vec4<f32>(paddle_color, i.col.w);
                 return o;
             }}
 
@@ -74,11 +87,11 @@ impl Entity for Paddle {
             ")
         ));
 
-        Some(state.add_render_pipeline("paddle", &wgpu::RenderPipelineDescriptor {
-            label: None,
+        Some(state.add_render_pipeline(Self::pipeline_name(), &wgpu::RenderPipelineDescriptor {
+            label: Some(Self::pipeline_name()),
             layout: None,
             vertex: wgpu::VertexState {
-                module: shader,
+                module: &shader.module,
                 entry_point: "vs_main",
                 buffers: &[ColorVertex::desc().clone()]
             },
@@ -89,7 +102,7 @@ impl Entity for Paddle {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             fragment: Some(wgpu::FragmentState{
-                module: shader,
+                module: &shader.module,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState{
                     format: state.config.format.clone(),
@@ -102,11 +115,11 @@ impl Entity for Paddle {
     }
     
     fn model_name() -> &'static str {
-        "model_paddle"
+        "paddle_model"
     }
     
     fn pipeline_name() -> &'static str {
-        "default"
+        "paddle_pipe"
     }
     
 }

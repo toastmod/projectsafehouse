@@ -62,6 +62,12 @@ fn main() {
         &state,
         source: "
 
+        @binding({BINDGROUP_GLOBAL}) @group(0)
+        var<uniform> time: f32;
+
+        @binding({BINDGROUP_SCENEOBJECT}) @group(0)
+        var<uniform> model_mat: mat4x4<f32>;
+
         struct ColorVertexInput {
             @location(0) pos: vec3<f32>,
             @location(1) color: vec3<f32>,

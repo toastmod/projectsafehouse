@@ -177,7 +177,7 @@ fn main() {
                                     occlusion_query_set: None,
                                 });
                                 renderpass.set_vertex_buffer(0, vb.buffer.slice(..));
-                                renderpass.set_bind_group(0, &bindgroup, &[]);
+                                renderpass.set_bind_group(0, &bindgroup.0, &[]);
                                 renderpass.set_pipeline(pipeline.as_ref());
                                 renderpass.draw(0..3, 0..1);
                             }

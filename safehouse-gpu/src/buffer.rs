@@ -1,16 +1,11 @@
 use std::{any::Any, borrow::Borrow, num::NonZeroU64, rc::Rc};
 
-use crate::State;
+use crate::{binding::{Bindable, BindableType}, State};
 use slicebytes::cast_bytes;
 use wgpu::util::DeviceExt;
 
 pub trait Buffer {
     fn get_buffer(&self) -> &wgpu::Buffer;
-}
-
-pub trait Bindable {
-    fn get_layout_entry(slot: u32, visibility: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry;
-    fn get_binding_entry(&self, slot: u32) -> wgpu::BindGroupEntry; 
 }
 
 pub struct VertexBuffer {
@@ -117,6 +112,15 @@ impl<T> Buffer for Uniform<T> {
 }
 
 impl<T> Bindable for Uniform<T> {
+    fn get_binding_entry(&self, slot: u32) -> wgpu::BindGroupEntry {
+        wgpu::BindGroupEntry {
+            binding: slot,
+            resource: self.get_buffer().as_entire_binding()
+        }
+    }
+}
+
+impl<T> BindableType for Uniform<T> {
     fn get_layout_entry(slot: u32, visibility: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
         wgpu::BindGroupLayoutEntry {
             binding: slot,
@@ -127,13 +131,6 @@ impl<T> Bindable for Uniform<T> {
                 min_binding_size: Some(NonZeroU64::new(std::mem::size_of::<T>() as u64).unwrap()) 
             },
             count: None
-        }
-    }
-
-    fn get_binding_entry(&self, slot: u32) -> wgpu::BindGroupEntry {
-        wgpu::BindGroupEntry {
-            binding: slot,
-            resource: self.get_buffer().as_entire_binding()
         }
     }
 }
@@ -167,12 +164,14 @@ impl<T> Buffer for UniformPtr<T> {
 }
 
 impl<T> Bindable for UniformPtr<T> {
-    fn get_layout_entry(slot: u32, visibility: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
-        Uniform::<T>::get_layout_entry(slot, visibility)
-    }
-
     fn get_binding_entry(&self, slot: u32) -> wgpu::BindGroupEntry {
         self.buffer.get_binding_entry(slot)
+    }
+}
+
+impl<T> BindableType for UniformPtr<T> {
+    fn get_layout_entry(slot: u32, visibility: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
+        Uniform::<T>::get_layout_entry(slot, visibility)
     }
 }
 

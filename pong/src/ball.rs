@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use crate::render;
 use render::{entity::Entity, gpu::{self, wgpu}, model::ModelData, scene::SceneObjectHandle, vertex_type::ColorVertex, RenderManager};
+use safehouse_render::entity::EntityPipeline;
 
 #[derive(Debug,Default)]
 pub struct Ball {
@@ -11,7 +12,20 @@ pub struct Ball {
 
 impl Entity for Ball {
 
-    fn load_model(state: &mut gpu::State) -> ModelData {
+    const ENTITY_TYPE_NAME: &'static str = "ball";
+
+    fn on_instantiate<'w>(_: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
+        let mut b = Self::default();
+        b.vx = 0.0;
+        b.vy = 0.0;
+        b.scene_handle = handle;
+        b
+    }
+
+    fn model_name() -> &'static str {
+        "ball_model"
+    }
+    fn load_model(state: &gpu::State) -> ModelData {
         
         ModelData {
             vertex_buffer: gpu::buffer::VertexBuffer::new(&state, &[
@@ -30,25 +44,28 @@ impl Entity for Ball {
         
     }
 
-    fn load_pipeline(_: &mut gpu::State) -> Option<Rc<wgpu::RenderPipeline>> {
-        None
-    }
-    
-    fn on_instantiate<'w>(_: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
-        let mut b = Self::default();
-        b.vx = 0.0;
-        b.vy = 0.0;
-        b.scene_handle = handle;
-        b
-    }
-    
-    fn model_name() -> &'static str {
-        "ball"
-    }
-    
     fn pipeline_name() -> &'static str {
         "default"
     }
+    fn load_pipeline(_: &RenderManager) -> Option<EntityPipeline> {
+        None
+    }
+    
+    fn bindings_name() -> &'static str {
+        "ball_bindings"
+    }
+    fn load_bindings<'a>() -> Vec<gpu::binding::Binder<Self>> where Self: Sized {
+        vec![]
+    }
+    
+    fn shader_name() -> &'static str {
+        "default" 
+    }
+    
+    fn load_shader(rm: &safehouse_render::RenderManager, group_model: u32, group_entity: u32) -> Option<gpu::shaderprogram::Program> {
+        None
+    }
+    
     
 }
 

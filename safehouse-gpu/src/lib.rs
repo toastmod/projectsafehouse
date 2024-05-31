@@ -3,6 +3,7 @@ pub mod shaderprogram;
 pub mod texture;
 pub mod dataunit;
 pub mod vertex;
+pub mod binding;
 use std::{collections::HashMap, rc::Rc };
 use wgpu::Backends;
 pub use wgpu;
@@ -47,6 +48,9 @@ impl<'window> State<'window> {
 
         let (device, queue) = futures::executor::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
+                required_limits: wgpu::Limits {
+                    ..Default::default()
+                },
                 ..Default::default()
             },
             None,
@@ -116,21 +120,21 @@ impl<'window> State<'window> {
         shader_ref
     }
 
-    pub fn get_shader(&self, shader_name: &str) -> Rc<shaderprogram::Program> {
-        Rc::clone(
-            self.shader_programs
-                .get(shader_name)
-                .expect(&format!("Fatal Error: Shader: '{}' not found.", shader_name))
-        )
+    pub fn get_shader<'a>(&'a self, shader_name: &str) -> &'a Rc<shaderprogram::Program> {
+        self.shader_programs
+            .get(shader_name)
+            .expect(&format!("Fatal Error: Shader: '{}' not found.", shader_name))
+        
     }
 
-    pub fn init_bindgroup_from_pipeline(&self, pipeline_name: &str, bindgroup_index: u32, entries: &[wgpu::BindGroupEntry]) -> Option<Rc<wgpu::BindGroup>> {
+    pub fn init_bindgroup_from_pipeline(&self, pipeline_name: &str, bindgroup_index: u32, entries: &[wgpu::BindGroupEntry]) -> Option<(Rc<wgpu::BindGroup>, Rc<wgpu::BindGroupLayout>)> {
         let pipeline_ref = self.get_render_pipeline(pipeline_name)?;
-        Some(Rc::new(self.device.create_bind_group(&wgpu::BindGroupDescriptor{
+        let bglayout = Rc::new(pipeline_ref.get_bind_group_layout(bindgroup_index));
+        Some((Rc::new(self.device.create_bind_group(&wgpu::BindGroupDescriptor{
             label: None,
-            layout: &pipeline_ref.get_bind_group_layout(bindgroup_index),
+            layout: &bglayout,
             entries
-        })))
+        })), bglayout))
     }
 
 

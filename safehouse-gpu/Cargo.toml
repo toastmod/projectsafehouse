@@ -11,6 +11,10 @@ winit = {workspace = true}
 futures = {workspace = true}
 image = {workspace = true}
 slicebytes = {workspace = true}
+glyphon = { workspace = true, optional = true, default-features = false}
 
 [dev-dependencies]
 winit = { workspace = true }
+
+[features]
+text = ["glyphon"]

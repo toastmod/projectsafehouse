@@ -3,6 +3,7 @@ use safehouse_gpu::buffer::{UniformPtr};
 
 use crate::model::ModelData;
 use crate::gpu::wgpu;
+
 pub struct SceneObject {
     pub name: String,
     pub model_data: Rc<ModelData>,

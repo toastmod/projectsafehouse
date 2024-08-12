@@ -8,9 +8,9 @@ The goal of this project is to make a game engine that can be broken down into s
 
 Each module builds off of other modules, hence being incremental.
 
--   `safehouse-engine`: The object manager with higher-level concepts.
-    -   `safehouse-render`: The rendering manager
-        -   `safehouse-gpu`: The GPU Backend Interface
+-   `safehouse-engine`: The object manager with higher, game-engine-level concepts.
+    -   `safehouse-render`: The rendering manager.
+        -   `safehouse-gpu`: The GPU state.
 
 # External Modules
 

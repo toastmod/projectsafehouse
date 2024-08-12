@@ -10,6 +10,7 @@ pub mod controller;
 pub mod utils;
 pub mod bindgroups; 
 pub mod resource;
+pub mod texture;
 
 mod manager;
 

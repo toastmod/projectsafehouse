@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 safehouse-render = {workspace = true}
+tagmap = { workspace = true }
 
 [build-dependencies]
 safehouse-render = {workspace = true}

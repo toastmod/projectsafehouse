@@ -85,4 +85,43 @@ impl crate::gpu::vertex::Vertex for ColorVertex {
     }
 }
 
+#[repr(C)]
+#[derive(Debug,Clone,Copy,Default)]
+pub struct TexVertex {
+    pub pos: [f32; 4],
+    pub tex_coord: [f32;2],
+}
+
+impl TexVertex {
+    pub fn new(pos: [f32; 4], tex_coord: [f32; 2]) -> Self {
+        Self {
+            pos,
+            tex_coord
+        }
+    }
+}
+
+impl crate::gpu::vertex::Vertex for TexVertex {
+    fn desc() -> &'static wgpu::VertexBufferLayout<'static> {
+        &wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<TexVertex>() as u64,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: 0,
+                    shader_location: 0,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x2,
+                    offset: std::mem::size_of::<f32>() as u64 * 4u64,
+                    shader_location: 1,
+                },
+ 
+            ]  
+        }
+    }
+}
+
+
 

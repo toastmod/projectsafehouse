@@ -1,10 +1,12 @@
-use std::rc::Rc;
+use std::{f32::consts::PI, rc::Rc};
 
-use crate::render;
+use crate::{ball::Ball, pong::{BackForwVecs, PongPhysics, SCREEN_HEIGHT, SCREEN_WIDTH}, render};
 use render::{BINDGROUP_GLOBAL, BINDGROUP_SCENEOBJECT, entity::Entity, glam, gpu::{self, buffer::UniformPtr, program}, model::ModelData, scene::SceneObjectHandle, vertex_type::{AdvVertex, ColorVertex}, RenderManager};
 use gpu::{vertex::Vertex, wgpu,shaderprogram::Program};
 use safehouse_render::{entity::EntityPipeline, gpu::{binding::Binder, buffer::Buffer}};
 
+pub const PADDLE_LENGTH: f32 = 0.15;
+pub const PADDLE_THICK: f32 = 0.01;
 
 #[derive(Debug)]
 pub struct Paddle {
@@ -121,10 +123,15 @@ impl Paddle {
     /// In this specific implementation, we are assuming a static screen size with no resizing.
     /// Therefore our game logic will use window coordinates, which we will convert to screen coords.
     pub fn move_to(&mut self, rm: &mut RenderManager, x: f32, y: f32) {
-        let (x, y) = rm.window_to_world_coord(x, y);
         let transform = rm.mut_scene_object(self.scene_handle).unwrap().transform_mut();
         transform.w_axis.x = x; 
         transform.w_axis.y = -y; 
+    }
+
+    pub fn get_pos(&self, rm: &RenderManager) -> (f32,f32) {
+        let scene_obj = rm.get_scene_object(self.scene_handle).unwrap(); 
+        let transform = scene_obj.transform_ref();
+        (transform.w_axis.x, -transform.w_axis.y)
     }
 
     /// Set the color for the paddle.
@@ -132,4 +139,39 @@ impl Paddle {
         *self.color.as_mut() = rgb;
         self.color.update(&rm.gpu_state);
     }
+
+    /// Detect collision if Ball hits the Paddle
+    pub fn collision(&self, rm: &RenderManager, ball: &Ball) -> Option<PongCollision> {
+        let (b1, b1y) = ball.get_pos(rm);
+        let (b2, b2y) = (ball.px, ball.py);
+        let (x, y) = self.get_pos(rm);
+
+        let xbfv = BackForwVecs::new(b1, b2, x);
+
+        if xbfv.is_collision() {
+            let slope = (b2y-b1y)/(b2-b1);
+            let yint = SCREEN_HEIGHT + ((slope*x)+y); 
+            let bounce_angle = f32::abs(yint+(y+(PADDLE_LENGTH/2.0)))/PADDLE_LENGTH;
+
+            if bounce_angle >= 0.0 && bounce_angle <= 1.0 {
+                Some(PongCollision { 
+                    yint, 
+                    xint: x, 
+                    bounce_angle 
+                })
+            }else {
+                None
+            }
+
+        }else{
+            None
+        }
+
+    } 
+}
+
+pub struct PongCollision {
+    pub yint: f32,
+    pub xint: f32,
+    pub bounce_angle: f32,
 }

@@ -41,6 +41,8 @@ pub trait Entity {
 
     // TODO: return an array of specifically Vertex and Fragment references
     fn load_shader(rm: &crate::RenderManager, group_model: u32, group_entity: u32) -> Option<gpu::shaderprogram::Program>;
+
+    // TODO: use ENTITY_TYPE_NAME to generate these strings, use an external const fn?
     fn bindings_name() -> &'static str;
     fn model_name() -> &'static str;
     fn pipeline_name() -> &'static str;

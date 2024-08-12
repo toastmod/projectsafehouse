@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data"]
+members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data", "glyphon"]
 exclude = ["safehouse"]
 
 [workspace.dependencies]
@@ -13,3 +13,5 @@ safehouse-data ={ path = "safehouse-data" }
 futures = "*"
 image = {version = "0.25.1", features = ["jpeg","png"]}
 slicebytes = { path = "./slicebytes" }
+tagmap = { git = "http://github.com/toastmod/tagmap"}
+glyphon = { path = "./glyphon" }

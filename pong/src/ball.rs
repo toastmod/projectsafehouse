@@ -1,23 +1,31 @@
-use std::rc::Rc;
-use crate::render;
+use std::{f32::consts::PI, rc::Rc, time::Duration};
+use crate::{map, pong::{PongPhysics, PongState}, render};
 use render::{entity::Entity, gpu::{self, wgpu}, model::ModelData, scene::SceneObjectHandle, vertex_type::ColorVertex, RenderManager};
 use safehouse_render::entity::EntityPipeline;
 
 #[derive(Debug,Default)]
 pub struct Ball {
-    scene_handle: SceneObjectHandle, 
-    vx: f32,
-    vy: f32,
+    pub scene_handle: SceneObjectHandle, 
+    pub speed: f32,
+    pub vx: f32,
+    pub vy: f32,
+    pub px: f32,
+    pub py: f32,
 }
 
 impl Entity for Ball {
 
     const ENTITY_TYPE_NAME: &'static str = "ball";
 
-    fn on_instantiate<'w>(_: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
+    fn on_instantiate<'w>(rm: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
         let mut b = Self::default();
-        b.vx = 0.0;
-        b.vy = 0.0;
+        b.speed = 1.4; // 0.5 units/second
+        // Initial distribution of speed stat
+        b.vx = -0.9*b.speed;
+        b.vy = -0.1*b.speed;
+        let (px, py) = b.get_pos(rm);
+        b.px = px;
+        b.py = py;
         b.scene_handle = handle;
         b
     }
@@ -70,23 +78,45 @@ impl Entity for Ball {
 }
 
 impl Ball {
-    pub fn update(&mut self, rm: &mut RenderManager) {
-        let scene_obj = rm.mut_scene_object(self.scene_handle).unwrap(); 
-        let transform = scene_obj.transform_mut();
-        transform.w_axis.x += self.vx;
-        transform.w_axis.y += self.vy;
+
+    pub fn move_next(&mut self, rm: &mut RenderManager, delta_time: Duration) {
+        let scene_obj = rm.get_scene_object(self.scene_handle).unwrap(); 
+        let transform = scene_obj.transform_ref();
+        let (x, y) = self.get_next_pos(rm, delta_time);
+        self.move_to(rm, x, y)
+    }
+
+    pub fn get_next_pos(&self, rm: &RenderManager, delta_time: Duration) -> (f32, f32) {
+        let (x, y) = self.get_pos(rm);
+        let scene_obj = rm.get_scene_object(self.scene_handle).unwrap(); 
+        let transform = scene_obj.transform_ref();
+        (transform.w_axis.x + self.vx * delta_time.as_secs_f32(), (-transform.w_axis.y) + self.vy * delta_time.as_secs_f32())
     }
 
     pub fn get_pos(&self, rm: &RenderManager) -> (f32,f32) {
         let scene_obj = rm.get_scene_object(self.scene_handle).unwrap(); 
         let transform = scene_obj.transform_ref();
-        rm.world_to_window_coord(transform.w_axis.x, transform.w_axis.y)
+        (transform.w_axis.x, -transform.w_axis.y)
     }
 
     pub fn move_to(&mut self, rm: &mut RenderManager, x: f32, y: f32) {
-        let (x, y) = rm.window_to_world_coord(x, y);
         let transform = rm.mut_scene_object(self.scene_handle).unwrap().transform_mut();
         transform.w_axis.x = x; 
         transform.w_axis.y = -y; 
     }
+
+    pub fn bounce(&mut self, bounce_angle: f32) {
+        let bounce_angle = map(bounce_angle, 0.0..1.0, 0.2..0.8);
+        self.vx = -self.vx.signum() * f32::cos(bounce_angle * (PI/2.0)) * self.speed;
+        self.vy = self.vy.signum() * f32::sin(bounce_angle * (PI/2.0)) * self.speed;
+
+    } 
+
+    pub fn bounce_x(&mut self) {
+        self.vx *= -1.0;
+    } 
+
+    pub fn bounce_y(&mut self) {
+        self.vy *= -1.0;
+    } 
 }

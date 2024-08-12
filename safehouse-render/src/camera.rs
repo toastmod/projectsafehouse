@@ -14,11 +14,11 @@ pub struct Camera {
     pub rotation: (f32, f32),
     pub WIDTH: f32,
     pub HEIGHT: f32,
-    pub model: glam::Mat4,
+    // pub model: glam::Mat4,
     pub view: glam::Mat4,
     pub projection: glam::Mat4,
-    pub PV: glam::Mat4,
-    pub PVM: glam::Mat4,
+    // pub PV: glam::Mat4,
+    // pub PVM: glam::Mat4,
     pub pv_changed: bool,
     pub camera_speed: f32,
     pub force_camera_update_flag: bool
@@ -30,11 +30,11 @@ fn b2f(b: bool) -> f32 {
 
 impl Camera {
     pub fn new(width: f32, height: f32) -> Camera {
-        let mut model = glam::Mat4::IDENTITY;
+        // let mut model = glam::Mat4::IDENTITY;
         let mut view = glam::Mat4::IDENTITY;
         let mut projection = glam::Mat4::perspective_infinite_lh(90f32.to_radians(), (width / height) as f32, 0.0);
-        let mut PV = projection * view;
-        let mut PVM = PV * model;
+        // let mut PV = projection * view;
+        // let mut PVM = PV * model;
         Camera {
             aspect_ratio: width / height,
             position: (0.0, 0.0, 0.0),
@@ -44,11 +44,11 @@ impl Camera {
             rotation: (0.0, 0.0),
             WIDTH: width,
             HEIGHT: height,
-            model,
+            // model,
             view,
             projection,
-            PV,
-            PVM,
+            // PV,
+            // PVM,
             pv_changed: false,
             camera_speed: 0.2f32,
             force_camera_update_flag: true
@@ -124,9 +124,9 @@ impl Camera {
         self.projection
     }
 
-    pub fn get_model_mat4(&self) -> Mat4 {
-        self.model
-    }
+    // pub fn get_model_mat4(&self) -> Mat4 {
+    //     self.model
+    // }
 
     pub fn set_view_mat4(&mut self, new_view: glam::Mat4) {
         self.view = new_view;
@@ -134,14 +134,14 @@ impl Camera {
     }
 
     pub fn set_proj_mat4(&mut self, new_proj: glam::Mat4) {
-        self.pv_changed = true;
         self.projection = new_proj;
+        self.pv_changed = true;
     }
 
     /// Sets the model mat4 directly and does nothing else.
-    pub fn set_model_mat4(&mut self, new_model: glam::Mat4) {
-        self.model = new_model;
-    }
+    // pub fn set_model_mat4(&mut self, new_model: glam::Mat4) {
+    //     self.model = new_model;
+    // }
 
     pub fn rotation_to_direction(&self) -> (f32, f32, f32) {
         (
@@ -170,10 +170,14 @@ impl Camera {
 
     /// Sets the model mat4 and updates the PVM matrix.
     /// Should be used when rendering models
-    pub fn update_model(&mut self, new_model: glam::Mat4) {
-        self.model = new_model;
-        self.check_recalc_pv();
-        self.PVM = self.PV * self.model;
+    // pub fn update_model(&mut self, new_model: glam::Mat4) {
+    //     self.model = new_model;
+    //     self.check_recalc_pv();
+    //     self.PVM = self.PV * self.model;
+    // }
+
+    pub fn calc_pvm(&self, model: glam::Mat4) -> glam::Mat4 {
+        self.projection * self.view * model
     }
 
     pub fn lookat_upd8(&mut self) -> Mat4 {
@@ -190,11 +194,11 @@ impl Camera {
         res
     }
 
-    pub fn check_recalc_pv(&mut self){
-        if self.pv_changed {
-            self.PV = self.projection * self.view;
-        }
-    }
+    // pub fn check_recalc_pv(&mut self){
+    //     if self.pv_changed {
+    //         self.PV = self.projection * self.view;
+    //     }
+    // }
 
     pub fn upd8(&mut self, force_upd8_matrix: bool, delta_time: u128){
 

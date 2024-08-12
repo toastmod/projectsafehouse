@@ -1,6 +1,5 @@
 pub mod d2;
-
-use crate::gpu;
+use crate::{gpu, texture::TextureType};
 use std::{ops::Range, rc::Rc};
 
 use gpu::wgpu;
@@ -10,7 +9,7 @@ pub trait ModelDataRes {}
 
 pub struct ModelData {
     pub vertex_buffer: Rc<VertexBuffer>,
-    pub textures: Option<Vec<gpu::texture::Texture>>,
+    pub textures: Option<Vec<TextureType>>,
     pub model_bindgroup: Option<(Rc<wgpu::BindGroup>, Rc<wgpu::BindGroupLayout>)>,
     pub groups: Box<[Range<u32>]>
 }

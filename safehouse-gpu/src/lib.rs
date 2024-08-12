@@ -5,9 +5,16 @@ pub mod dataunit;
 pub mod vertex;
 pub mod binding;
 use std::{collections::HashMap, rc::Rc };
+use texture::sampler::TextureSampler;
 use wgpu::Backends;
 pub use wgpu;
 pub use winit;
+
+#[cfg(feature="text")]
+pub mod text;
+
+#[cfg(feature="text")]
+pub use text::*;
 
 pub struct State<'window> {
     // GPU Context 
@@ -19,7 +26,7 @@ pub struct State<'window> {
     // Model rendering
     pub shader_programs: HashMap<String, Rc<shaderprogram::Program>>,
     pub render_pipelines: HashMap<String, Rc<wgpu::RenderPipeline>>,
-    pub texture_samplers: HashMap<String, Rc<wgpu::Sampler>>,
+    pub texture_samplers: HashMap<String, Rc<TextureSampler>>,
     // Data bindings
     pub bindgroups: Vec<Rc<wgpu::BindGroupLayout>>,
     pub resized: bool,
@@ -103,6 +110,7 @@ impl<'window> State<'window> {
     }
 
     pub fn get_render_pipeline(&self, pipeline_name: &str) -> Option<Rc<wgpu::RenderPipeline>> {
+        // TODO: why is this a redundant `Some`? fix this
         Some(Rc::clone(
             self.render_pipelines
                 .get(pipeline_name)
@@ -125,6 +133,18 @@ impl<'window> State<'window> {
             .get(shader_name)
             .expect(&format!("Fatal Error: Shader: '{}' not found.", shader_name))
         
+    }
+
+    pub fn add_sampler(&mut self, sampler_name: &str, sampler: &wgpu::SamplerDescriptor) -> Rc<texture::sampler::TextureSampler> {
+        let sampler_rc = Rc::new(TextureSampler::new(&self, sampler));
+        self.texture_samplers.insert(String::from(sampler_name), Rc::clone(&sampler_rc));
+        sampler_rc
+    }
+
+    pub fn get_sampler<'a>(&'a self, sampler_name: &str) -> &'a Rc<TextureSampler> {
+        self.texture_samplers
+        .get(sampler_name)
+        .expect(&format!("Fatal Error: Sampler: '{}' not found.", sampler_name))
     }
 
     pub fn init_bindgroup_from_pipeline(&self, pipeline_name: &str, bindgroup_index: u32, entries: &[wgpu::BindGroupEntry]) -> Option<(Rc<wgpu::BindGroup>, Rc<wgpu::BindGroupLayout>)> {

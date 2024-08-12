@@ -2,8 +2,10 @@ pub use super::bindgroups::{
     BINDGROUP_GLOBAL,
     BINDGROUP_SCENEOBJECT,
 };
+use std::collections::VecDeque;
 use std::{collections::HashMap, hash::Hash, num::NonZeroU64, rc::Rc, time::Instant};
 
+use crate::texture::DynamicTexture;
 // use crate::bindgroups::BINDGROUP_SHADER;
 use crate::{camera::Camera, resource::ManagerResource};
 use crate::controller::Controller;
@@ -67,7 +69,9 @@ pub struct RenderManager<'window> {
 
     pub camera: Camera,
 
-    pub controllers: TagMap<Controller>
+    pub dynamic_textures: TagMap<DynamicTexture>,
+
+    dyntexture_queue: VecDeque<usize>
 
 }
 
@@ -178,6 +182,11 @@ impl<'w> RenderManager<'w> {
             multiview: None 
         });
 
+        gpu_state.add_sampler("default", &wgpu::SamplerDescriptor { 
+            label: Some("default"), 
+            ..Default::default()
+        });
+
         let time = UniformPtr::new(&gpu_state, 0.0f32);
 
         let global_bindgroup = Rc::new(gpu_state.device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -187,7 +196,7 @@ impl<'w> RenderManager<'w> {
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: time.get_buffer().as_entire_binding(),
-                }
+                },
             ],
         }));
 
@@ -195,7 +204,7 @@ impl<'w> RenderManager<'w> {
 
         let camera = Camera::new(gpu_state.config.width as f32, gpu_state.config.height as f32);
 
-        let mut controllers = TagMap::new();
+        // let mut controllers = TagMap::new();
 
         Self {
             global_bindgroup,
@@ -213,9 +222,10 @@ impl<'w> RenderManager<'w> {
             window,
             start_instant,
             camera,
-            controllers,
             last_render_instant: Instant::now(),
             entity_bglayout_cache: HashMap::new(),
+            dynamic_textures: TagMap::new(),
+            dyntexture_queue: VecDeque::new(),
         }
 
     }
@@ -225,11 +235,37 @@ impl<'w> RenderManager<'w> {
         *self.time.as_mut() = self.start_instant.elapsed().as_secs_f32();
     }
 
-    pub fn render(&self) {
+    pub fn add_dyn_texture(&mut self, dt: DynamicTexture) -> usize {
+        self.dynamic_textures.add(dt)
+    }
+
+    pub fn get_dyn_texture(&mut self, handle: usize) -> Option<&mut DynamicTexture> {
+        self.dynamic_textures[handle].as_mut()
+    }
+
+    pub fn render_dyn_textures(&mut self) {
+        while !self.dyntexture_queue.is_empty() {
+            let dyntex = if let Some(dt) = self.dyntexture_queue.pop_back() {
+                if let Some(dtt) = self.dynamic_textures[dt].as_mut() {
+                    dtt
+                }else {
+                    println!("A dynamic texture was queued but it's index did not contain data.");
+                    continue;
+                }
+            } else {
+                continue;
+            };
+        }
+    }
+
+    pub fn render<'pass>(&self, dynamic_texture_queue: &'pass [&'pass DynamicTexture]) {
 
         let mut cmd = self.gpu_state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         let surfacetexture = self.gpu_state.surface.get_current_texture().unwrap();
         {
+            for dt in dynamic_texture_queue {
+                dt.render_self(&mut cmd);
+            }
             let view = surfacetexture.texture.create_view(&wgpu::TextureViewDescriptor::default());
             let mut renderpass = cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
@@ -297,8 +333,12 @@ impl<'w> RenderManager<'w> {
 
     }
 
-    pub fn add_controller(&mut self) -> ControllerHandle {
-        self.controllers.add(Controller::new(None))
+    // pub fn add_controller(&mut self) -> ControllerHandle {
+    //     self.controllers.add(Controller::new(None))
+    // }
+
+    pub fn build_bindgroup(&mut self) {
+        
     }
 
     pub fn add_model(&mut self, model_name: &str, model_data: ModelData) -> Rc<ModelData> {
@@ -540,7 +580,7 @@ impl<'w> RenderManager<'w> {
     pub fn world_to_window_coord(&self, x: f32, y: f32) -> (f32,f32) {
         (
             ((x+1.0)/2.0)*self.w_width(),
-            -((y+1.0)/2.0)*self.w_height()
+            ((y+1.0)/2.0)*self.w_height()
         )
     }
 

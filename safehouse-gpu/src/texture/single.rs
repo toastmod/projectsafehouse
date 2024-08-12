@@ -1,4 +1,4 @@
-use crate::dataunit::*;
+use crate::{binding::{Bindable, BindableType}, dataunit::*};
 // use glium::glutin::surface::WindowSurface;
 // use glium::{Display, Program};
 use std::rc::Rc;
@@ -17,7 +17,6 @@ use std::rc::Rc;
 
 pub struct Texture {
     texture: Rc<wgpu::Texture>,
-    // sampler: Rc<wgpu::Sampler>,
     pub view: Rc<wgpu::TextureView>
 }
 
@@ -83,4 +82,61 @@ impl Texture {
     
     }
 
+    pub fn new_blank_dynamic(display: &crate::State, width: u32, height: u32) -> Self {
+        let image_dimensions = wgpu::Extent3d{
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+            
+        let texture = display.device.create_texture(&wgpu::TextureDescriptor {
+            label: None,
+            size: image_dimensions,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: display.config.format.clone(),
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+            
+        Texture {
+            view: Rc::new(texture.create_view(&wgpu::TextureViewDescriptor {
+                label: None,
+                format: Some(display.config.format.clone()), 
+                dimension: Some(wgpu::TextureViewDimension::D2), 
+                aspect: wgpu::TextureAspect::All, 
+                base_mip_level: 0, 
+                mip_level_count: None, 
+                base_array_layer: 0, 
+                array_layer_count: None 
+            })),
+            texture: Rc::new(texture),
+        }
+    }
+
+}
+
+impl Bindable for Texture {
+    fn get_binding_entry(&self, slot: u32) -> wgpu::BindGroupEntry {
+        crate::wgpu::BindGroupEntry {
+            binding: slot,
+            resource: crate::wgpu::BindingResource::TextureView(&self.view),
+        }
+    }
+}
+
+impl BindableType for Texture {
+    fn get_layout_entry(slot: u32, visibility: wgpu::ShaderStages) -> wgpu::BindGroupLayoutEntry {
+        wgpu::BindGroupLayoutEntry {
+            binding: slot, 
+            visibility, 
+            ty: wgpu::BindingType::Texture { 
+                sample_type: wgpu::TextureSampleType::Float { filterable: false }, 
+                view_dimension: wgpu::TextureViewDimension::D2, 
+                multisampled: false
+            }, 
+            count: None 
+        }
+    }
 }

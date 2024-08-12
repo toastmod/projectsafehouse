@@ -44,7 +44,7 @@ fn main() {
                         // println!("draw");
                         rm.gpu_state.update_resize();
                         rm.update_time();
-                        rm.render();
+                        rm.render(&[]);
                     }
                     rm.window.request_redraw();
                 }

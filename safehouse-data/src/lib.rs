@@ -10,7 +10,7 @@
 // }
 
 use std::{fs::File, io::{Error, Write}};
-
+pub use safehouse_render as render;
 pub mod model;
 
 pub fn create_file<T>(path: &str, data: &[T]) -> Result<(),Error> {

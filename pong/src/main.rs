@@ -71,7 +71,7 @@ fn main() {
                 winit::event::WindowEvent::RedrawRequested => {
                     if Instant::now().duration_since(last_rendered) >= Duration::from_millis(16) {
                         pong.update(&mut rm, last_rendered.elapsed());
-                        rm.render();
+                        rm.render(&[]);
                         last_rendered = Instant::now();
                     }
                     rm.window.request_redraw();

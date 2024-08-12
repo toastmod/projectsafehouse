@@ -62,6 +62,12 @@ fn main() {
         &state,
         source: "
 
+        @binding({BINDGROUP_GLOBAL}) @group(0)
+        var<uniform> time: f32;
+
+        @binding({BINDGROUP_SCENEOBJECT}) @group(0)
+        var<uniform> model_mat: mat4x4<f32>;
+
         struct ColorVertexInput {
             @location(0) pos: vec3<f32>,
             @location(1) color: vec3<f32>,
@@ -171,7 +177,7 @@ fn main() {
                                     occlusion_query_set: None,
                                 });
                                 renderpass.set_vertex_buffer(0, vb.buffer.slice(..));
-                                renderpass.set_bind_group(0, &bindgroup, &[]);
+                                renderpass.set_bind_group(0, &bindgroup.0, &[]);
                                 renderpass.set_pipeline(pipeline.as_ref());
                                 renderpass.draw(0..3, 0..1);
                             }

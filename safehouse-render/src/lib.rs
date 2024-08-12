@@ -9,6 +9,7 @@ pub mod camera;
 pub mod controller;
 pub mod utils;
 pub mod bindgroups; 
+pub mod resource;
 
 mod manager;
 

@@ -1,12 +1,11 @@
 pub use super::bindgroups::{
     BINDGROUP_GLOBAL,
     BINDGROUP_SCENEOBJECT,
-    BINDGROUP_MODEL,
-    BINDGROUP_ENTITY
 };
-use std::{collections::HashMap, rc::Rc, time::Instant};
+use std::{collections::HashMap, hash::Hash, num::NonZeroU64, rc::Rc, time::Instant};
 
-use crate::camera::Camera;
+// use crate::bindgroups::BINDGROUP_SHADER;
+use crate::{camera::Camera, resource::ManagerResource};
 use crate::controller::Controller;
 use crate::entity::Entity;
 use gpu::{buffer::{Buffer, UniformPtr}, program, shaderprogram::Program, vertex::Vertex};
@@ -15,7 +14,6 @@ use crate::model::ModelData;
 pub use safehouse_gpu as gpu;
 pub use glam; 
 use crate::scene::{SceneObject, SceneObjectHandle, ControllerHandle};
-use crate::shader::Shader;
 
 use gpu::wgpu;
 use tagmap::TagMap;
@@ -36,8 +34,17 @@ pub struct RenderManager<'window> {
     /// The global bindgroup to be used in all shaders.
     global_bindgroup: Rc<wgpu::BindGroup>,
 
+    /// The global bindgroup layout to be used in all shaders.
+    global_bglayout: Rc<wgpu::BindGroupLayout>,
+
+    /// The SceneObject bindgroup layout to be used in all shaders.
+    sceneobj_bglayout: Rc<wgpu::BindGroupLayout>,
+
     /// Cache for currently loaded model data.
     model_data_cache: HashMap<String, Rc<ModelData>>, 
+
+    // All active entity bindgroup layouts
+    pub(crate) entity_bglayout_cache: HashMap<String, Rc<wgpu::BindGroupLayout>>,
 
     /// All active entities to be updated by the CPU.
     // active_entities: Vec<Box<dyn ActiveEntity<C> + 'context>>,
@@ -50,7 +57,7 @@ pub struct RenderManager<'window> {
 
     /// Cache for currently loaded shaders.
     /// TODO: Implement Shader functionalities
-    shader_cache: HashMap<String, Rc<Shader>>,
+    // shader_cache: HashMap<String, Rc<Shader>>,
 
     pub time: UniformPtr<f32>,
 
@@ -67,6 +74,47 @@ pub struct RenderManager<'window> {
 impl<'w> RenderManager<'w> {
     pub fn new(window: &'w gpu::winit::window::Window) -> Self {
         let mut gpu_state = gpu::State::new(window);
+
+        let global_bglayout = Rc::new(gpu_state.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::all(),
+                    ty: wgpu::BindingType::Buffer { 
+                        ty: wgpu::BufferBindingType::Uniform, 
+                        has_dynamic_offset: false, 
+                        min_binding_size: Some(NonZeroU64::new(std::mem::size_of::<f32>() as u64).unwrap())
+                    },
+                    count: None,
+                }
+            ],
+        }));
+
+        let sceneobj_bglayout = Rc::new(gpu_state.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::all(),
+                    ty: wgpu::BindingType::Buffer { 
+                        ty: wgpu::BufferBindingType::Uniform, 
+                        has_dynamic_offset: false, 
+                        min_binding_size: Some(NonZeroU64::new(std::mem::size_of::<glam::Mat4>() as u64).unwrap())
+                    },
+                    count: None,
+                }
+            ],
+        }));
+
+        let default_pipelayout = gpu_state.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { 
+            label: Some("default_pipe_layout"), 
+            bind_group_layouts: &[
+                global_bglayout.as_ref(),
+                sceneobj_bglayout.as_ref()
+            ], 
+            push_constant_ranges: &[] 
+        });
 
         let shader = gpu_state.add_shader("default", program!(
             &gpu_state,
@@ -105,7 +153,7 @@ impl<'w> RenderManager<'w> {
 
         let default_pipeline = gpu_state.add_render_pipeline("default", &wgpu::RenderPipelineDescriptor { 
             label: None, 
-            layout: None, 
+            layout: Some(&default_pipelayout), 
             vertex: wgpu::VertexState { 
                 module: &shader.module, 
                 entry_point: "vs_main", 
@@ -124,7 +172,7 @@ impl<'w> RenderManager<'w> {
                 module: &shader.module, 
                 entry_point: "fs_main", 
                 targets: &[
-                    Some(wgpu::ColorTargetState { format: gpu_state.config.format.clone(), blend: Some(wgpu::BlendState::ALPHA_BLENDING), write_mask: wgpu::ColorWrites::ALL })
+                    Some(wgpu::ColorTargetState { format: gpu_state.config.format.clone(), blend: None, write_mask: wgpu::ColorWrites::ALL })
                 ] 
             }), 
             multiview: None 
@@ -132,12 +180,16 @@ impl<'w> RenderManager<'w> {
 
         let time = UniformPtr::new(&gpu_state, 0.0f32);
 
-        let global_bindgroup = gpu_state.init_bindgroup_from_pipeline("default", BINDGROUP_GLOBAL, &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: time.get_buffer().as_entire_binding(),
-            }
-        ]).expect("Could not create bindgroup!");
+        let global_bindgroup = Rc::new(gpu_state.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("global_bindgroup"),
+            layout: &global_bglayout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: time.get_buffer().as_entire_binding(),
+                }
+            ],
+        }));
 
         let start_instant = Instant::now();
 
@@ -147,20 +199,23 @@ impl<'w> RenderManager<'w> {
 
         Self {
             global_bindgroup,
+            global_bglayout,
+            sceneobj_bglayout,
             model_data_cache: HashMap::new(),
             // active_entities: vec![],
             gpu_state,
             // context,
             scene_objects: TagMap::new(),
             scene_queue: vec![],
-            shader_cache: HashMap::new(),
+            // shader_cache: HashMap::new(),
             time,
             default_pipeline,
             window,
             start_instant,
             camera,
             controllers,
-            last_render_instant: Instant::now()
+            last_render_instant: Instant::now(),
+            entity_bglayout_cache: HashMap::new(),
         }
 
     }
@@ -202,20 +257,26 @@ impl<'w> RenderManager<'w> {
                 let obj = self.get_scene_object(*objhandle).unwrap();
 
                 // Update model matrix only at render time (now)
-                obj.update_matrix(&self.gpu_state);
+                obj.update_matrix(self);
                 
                 // Set the SceneObject bindgroup for this object
                 renderpass.set_bind_group(BINDGROUP_SCENEOBJECT, &obj.sceneobject_bindgroup, &[]);
+
+                let mut curbg_id = BINDGROUP_SCENEOBJECT+1;
                 
                 // Set model BG if there is one
                 if let Some(mbg) = obj.model_data.model_bindgroup.as_ref() {
-                    renderpass.set_bind_group(BINDGROUP_MODEL, mbg, &[]);
+                    renderpass.set_bind_group(curbg_id, mbg.0.as_ref(), &[]);
+                    curbg_id +=1;
 
-                    // Entity BG should only be active if it's model is, otherwise it wouldn't make sense to use the shader.
-                    if let Some(ebg) = obj.entity_bindgroup.as_ref() {
-                        renderpass.set_bind_group(BINDGROUP_ENTITY, ebg, &[]);
-                    }
                 }
+
+                // Entity BG should only be active if it's model is, otherwise it wouldn't make sense to use the shader.
+                if let Some(ebg) = obj.entity_bindgroup.as_ref() {
+                    renderpass.set_bind_group(curbg_id, ebg, &[]);
+                }
+
+                // TODO: impl shader bindgroup
 
                 // Set the model's vertex buffer
                 renderpass.set_vertex_buffer(0, obj.model_data.vertex_buffer.buffer.slice(..));
@@ -247,41 +308,124 @@ impl<'w> RenderManager<'w> {
     }
 
     pub fn load_entity<E: Entity>(&mut self) {
+
+        println!("Loading Entity: {}", E::ENTITY_TYPE_NAME);
+
+        let bindings = E::load_bindings();
+
+        let entity_bglayout = if bindings.len() > 0 {
+            Some(match self.get_entity_layout(E::bindings_name()) {
+                Some(layout) => Rc::clone(layout),
+                None => {
+                    let entries: Vec<wgpu::BindGroupLayoutEntry> = E::load_bindings().iter().map(|b| b.get_layout_entry()).collect(); 
+                    self.add_entity_layout(E::bindings_name(), &entries)
+                },
+            })
+
+        } else {
+            None
+        };
+
         let model = E::load_model(&mut self.gpu_state);
+        
+        
+        let mut total_layout = vec![
+            self.global_bglayout.as_ref(),
+            self.sceneobj_bglayout.as_ref(),
+        ];
+
+        let mut group_entity = 0u32;
+        let mut group_model = 0u32;
+        // Note: Shader bg is currently ignored
+        // let mut group_shader = BINDGROUP_SHADER;
+
+        if let Some((_,layout)) = &model.model_bindgroup {
+            total_layout.push(&layout);
+            group_model = (total_layout.len()-1) as u32;
+        }
+
+        if let Some(layout) = &entity_bglayout {
+            total_layout.push(&layout);
+            group_entity = (total_layout.len()-1) as u32;
+        }
+
+        let shader_load = E::load_shader(&self, group_model, group_entity);
+        match shader_load {
+            Some(prog) => {
+                self.gpu_state.add_shader(E::shader_name(), prog);
+            },
+            None => (),
+        };
+
+        match E::load_pipeline(&self) {
+            Some(pipeargs) => {
+
+                let shader = self.gpu_state.get_shader(E::shader_name());
+
+                let pipe_layout = Rc::new(self.gpu_state.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: None,
+                    bind_group_layouts: &total_layout,
+                    push_constant_ranges: &[] 
+                }));   
+                
+                // Create pipeline
+                // NOTE: pseudo of self.gpu_state.add_render_pipeline
+                let pipe = Rc::new(self.gpu_state.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: Some(E::pipeline_name()),
+                    layout: Some(&pipe_layout),
+                    vertex: wgpu::VertexState {
+                        module: &shader.module, 
+                        entry_point: "vs_main", 
+                        buffers: &[model.vertex_buffer.desc.clone()] 
+                    },
+                    primitive: pipeargs.primitive,
+                    depth_stencil: pipeargs.depth_stencil,
+                    fragment: Some(wgpu::FragmentState {
+                        module: &shader.module,
+                        entry_point: "fs_main",
+                        // TODO: Support for multiple color targets
+                        targets: &[Some(wgpu::ColorTargetState {
+                            format: self.gpu_state.config.format.clone(),
+                            blend: None,
+                            write_mask: wgpu::ColorWrites::all() 
+                        })]
+                    }),
+                    multisample: wgpu::MultisampleState::default(),
+                    multiview: None 
+                }));
+        
+                self.gpu_state.render_pipelines.insert(String::from(E::pipeline_name()), Rc::clone(&pipe));
+            },
+            None => (),
+        };
+
         self.add_model(E::model_name(), model);
-        E::load_pipeline(&mut self.gpu_state);
+
+
+
     }
 
     pub fn add_scene_object(&mut self, object_name: &str, using_model: &str, using_pipeline: &str) -> SceneObjectHandle {
 
         let model_matrix = UniformPtr::new(&self.gpu_state, glam::Mat4::IDENTITY); 
 
-        // let bg_layout = self.gpu_state.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        //     label: None,
-        //     entries: &[
-        //         wgpu::BindGroupLayoutEntry {
-        //             binding: 0,
-        //             visibility: wgpu::ShaderStages::VERTEX,
-        //             ty: wgpu::BindingType::Buffer { 
-        //                 ty: wgpu::BufferBindingType::Uniform, 
-        //                 has_dynamic_offset: false, 
-        //                 min_binding_size: Some(NonZeroU64::new(std::mem::size_of::<glam::Mat4>() as u64).unwrap())
-        //             },
-        //             count: None,
-        //         }
-        //     ],
-        // });
+        let sceneobject_bindgroup = Rc::new(self.gpu_state.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(object_name),
+            layout: &self.sceneobj_bglayout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: model_matrix.get_buffer().as_entire_binding(),
+                }
+            ],
+        }));
 
-        let sceneobject_bindgroup = self.gpu_state.init_bindgroup_from_pipeline(using_pipeline, BINDGROUP_SCENEOBJECT, &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: model_matrix.get_buffer().as_entire_binding(),
-            }
-        ]).unwrap();
+        //TODO: resolve consistency of loading &Rc vs Rc for load functions 
+        // Should search() return a cloned ref, while the functions return &Rc?
 
         let sceneobj_handle = self.scene_objects.add(SceneObject {
             name: String::from(object_name),
-            model_data: self.get_model(using_model),
+            model_data: ModelData::fetch(using_model, self),
             pipeline_ref: self.get_pipeline(using_pipeline),
             entity_bindgroup: None,
             model_matrix,
@@ -308,9 +452,23 @@ impl<'w> RenderManager<'w> {
         self.gpu_state.get_render_pipeline(pipeline_name)
     }
 
-    pub fn get_model(&self, model_name: &str) -> Rc<ModelData> {
+    pub fn get_model(&self, model_name: &str) -> Option<&Rc<ModelData>> {
         // TODO: default pipeline 
-        Rc::clone(self.model_data_cache.get(model_name).unwrap())
+        // TODO: Implement a proper error convention
+        self.model_data_cache.get(model_name)
+    }
+
+    pub fn get_entity_layout(&self, layout_name: &str) -> Option<&Rc<wgpu::BindGroupLayout>> {
+        self.entity_bglayout_cache.get(layout_name)
+    }
+
+    pub fn add_entity_layout(&mut self, layout_name: &str, entries: &[wgpu::BindGroupLayoutEntry]) -> Rc<wgpu::BindGroupLayout> {
+        let layout = Rc::new(self.gpu_state.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some(layout_name),
+            entries: &entries
+        }));
+        self.entity_bglayout_cache.insert(String::from(layout_name), Rc::clone(&layout));
+        layout
     }
 
     // pub fn mut_context(&mut self) -> &mut C {
@@ -329,20 +487,45 @@ impl<'w> RenderManager<'w> {
         let sceneobject_handle = self.add_scene_object(name, E::model_name(), E::pipeline_name());
 
         // Instantiate the entity.
-        E::on_instantiate(self, sceneobject_handle)
+        let e = E::on_instantiate(self, sceneobject_handle);
+
+        // Load the bindings
+        let bindings = E::load_bindings();
+        if bindings.len() == 0 {
+            return e;
+        }
+        
+        // Check if a bindgroup layout was created yet
+        let (layout, bg_entries) = match self.entity_bglayout_cache.get(E::bindings_name()) {
+            
+            // Layout is already in memory, use it.
+            Some(l) => {
+                let layout = Rc::clone(&l);
+
+                let bg_entries: Vec<wgpu::BindGroupEntry> = bindings.iter().map(|x| {
+                    x.get_binding_entry(&e)
+                }).collect();
+
+                (layout, bg_entries)
+
+            },
+
+            // Make the new layout
+            None => panic!("Entity BindGroupLayout not loaded!"),
+
+        };
+
+        let bg = Rc::new(self.gpu_state.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(E::bindings_name()),
+            layout: &layout,
+            entries: &bg_entries 
+        }));
+
+        self.mut_scene_object(sceneobject_handle).unwrap().entity_bindgroup = Some(bg);
+
+        e
+
     }
-
-    // TODO: Spawn an active entity.\ 
-    // TODO: Note: entities should only contain references to the context.
-    // pub fn spawn_active_entity<E: Entity<C> + ActiveEntity<C> + 'c >(&mut self, name: &str) {
-
-    //     // Create the static SceneObject Entity
-    //     let sceneobject_entity: Box<dyn ActiveEntity<C>> = self.spawn_sceneobject_entity(name) as Box<E>;
-
-    //     // Add the Entity into active entities list to take part in the CPU update cycle. 
-    //     self.active_entities.push(sceneobject_entity);
-
-    // }
 
     /// Window width
     pub fn w_width(&self) -> f32 {

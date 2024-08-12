@@ -25,7 +25,7 @@ impl Pong {
         let ball_model = Ball::load_model(&mut rm.gpu_state);
 
         rm.add_model(
-            "ball",
+            "ball_model",
             ball_model 
         );
 
@@ -48,6 +48,10 @@ impl Pong {
 
         // Move CPU paddle to right center
         self.cpu.move_to(rm, SCREEN_WIDTH, SCREEN_HEIGHT/2.0);
+
+        // Set player and CPU colors
+        self.player.set_color(rm, [1.0,0.0,0.0]);
+        self.cpu.set_color(rm, [0.0,0.0,1.0]);
 
     }
 

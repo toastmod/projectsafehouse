@@ -52,8 +52,6 @@ fn main() {
 
     let mut state = safehouse_gpu::State::new(&window);
 
-    let debug = safehouse_debug::SafehouseDebugger::new(&window);
-
     let vb = safehouse_gpu::buffer::VertexBuffer::new(&state, &[
         ColorVertex::new([0.0,0.5,0.0],[1.0,0.0,0.0]),
         ColorVertex::new([0.5,-0.5,0.0],[0.0,1.0,0.0]),

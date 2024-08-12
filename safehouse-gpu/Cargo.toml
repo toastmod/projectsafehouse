@@ -14,4 +14,3 @@ slicebytes = {workspace = true}
 
 [dev-dependencies]
 winit = { workspace = true }
-safehouse-debug = { workspace = true }

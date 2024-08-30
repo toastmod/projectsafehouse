@@ -1,7 +1,7 @@
 use std::{f32::consts::PI, rc::Rc, time::Duration};
 use crate::{map, pong::{PongPhysics, PongState}, render};
 use render::{entity::Entity, gpu::{self, wgpu}, model::ModelData, scene::SceneObjectHandle, vertex_type::ColorVertex, RenderManager};
-use safehouse_render::entity::EntityPipeline;
+use safehouse_render::{entity::EntityPipeline, named_entity};
 
 #[derive(Debug,Default)]
 pub struct Ball {
@@ -30,9 +30,6 @@ impl Entity for Ball {
         b
     }
 
-    fn model_name() -> &'static str {
-        "ball_model"
-    }
     fn load_model(state: &gpu::State) -> ModelData {
         
         ModelData {
@@ -52,30 +49,22 @@ impl Entity for Ball {
         
     }
 
-    fn pipeline_name() -> &'static str {
-        "default"
-    }
-    fn load_pipeline(_: &RenderManager) -> Option<EntityPipeline> {
+    fn load_shader(rm: &safehouse_render::RenderManager, group_model: u32, group_entity: u32) -> Option<gpu::shaderprogram::Program> {
         None
     }
     
-    fn bindings_name() -> &'static str {
-        "ball_bindings"
-    }
     fn load_bindings<'a>() -> Vec<gpu::binding::Binder<Self>> where Self: Sized {
         vec![]
     }
     
-    fn shader_name() -> &'static str {
-        "default" 
-    }
-    
-    fn load_shader(rm: &safehouse_render::RenderManager, group_model: u32, group_entity: u32) -> Option<gpu::shaderprogram::Program> {
+    fn load_pipeline(rm: &safehouse_render::RenderManager) -> Option<EntityPipeline> {
         None
     }
     
     
 }
+
+named_entity!(Ball);
 
 impl Ball {
 

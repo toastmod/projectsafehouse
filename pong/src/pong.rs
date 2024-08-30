@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use safehouse_render::entity::NamedEntity;
 use safehouse_render::scene::{SceneObject, SceneObjectHandle};
 use tagmap::TagMap;
 
@@ -112,16 +113,9 @@ impl PongState {
     /// Load resources to start the game
     pub fn load_game(rm: &mut RenderManager) -> Self {
 
-        // Example of procedurally loading an entity's data:
+        // Loading entity data
         rm.load_entity::<Paddle>();
-
-        // Example of manually loading an entity's data:
-        let ball_model = Ball::load_model(&mut rm.gpu_state);
-
-        rm.add_model(
-            "ball_model",
-            ball_model 
-        );
+        rm.load_entity::<Ball>();
 
         // Spawn the scene objects and serve.
         Self {

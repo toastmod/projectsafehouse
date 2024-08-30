@@ -9,7 +9,7 @@ use crate::texture::DynamicTexture;
 // use crate::bindgroups::BINDGROUP_SHADER;
 use crate::{camera::Camera, resource::ManagerResource};
 use crate::controller::Controller;
-use crate::entity::Entity;
+use crate::entity::{Entity, NamedEntity};
 use gpu::{buffer::{Buffer, UniformPtr}, program, shaderprogram::Program, vertex::Vertex};
 use crate::model::ModelData;
 
@@ -347,7 +347,7 @@ impl<'w> RenderManager<'w> {
         r
     }
 
-    pub fn load_entity<E: Entity>(&mut self) {
+    pub fn load_entity<E: Entity + NamedEntity>(&mut self) {
 
         println!("Loading Entity: {}", E::ENTITY_TYPE_NAME);
 
@@ -436,7 +436,10 @@ impl<'w> RenderManager<'w> {
         
                 self.gpu_state.render_pipelines.insert(String::from(E::pipeline_name()), Rc::clone(&pipe));
             },
-            None => (),
+            None => {
+                // Use default if not specified
+                self.gpu_state.render_pipelines.insert(String::from(E::pipeline_name()), Rc::clone(&self.default_pipeline));
+            },
         };
 
         self.add_model(E::model_name(), model);
@@ -521,7 +524,7 @@ impl<'w> RenderManager<'w> {
 
     /// Spawn an entity as a static SceneObject.\ 
     /// Note: entities should only contain references to the context.
-    pub fn spawn_sceneobject_entity<E: Entity>(&mut self, name: &str) -> E {
+    pub fn spawn_sceneobject_entity<E: Entity + NamedEntity>(&mut self, name: &str) -> E {
         
         // Create a SceneObject to accompany entity
         let sceneobject_handle = self.add_scene_object(name, E::model_name(), E::pipeline_name());

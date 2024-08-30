@@ -1,0 +1,10 @@
+[package]
+name = "walk-demo-engine"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+safehouse-render = {workspace = true}
+
+[build-dependencies]
+safehouse-data = {workspace = true}

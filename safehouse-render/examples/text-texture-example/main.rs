@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, rc::Rc, thread::park_timeout_ms, time::{Duration, Instant}};
 use safehouse_gpu::{binding::Binder, buffer::VertexBuffer, program, texture::sampler::TextureSampler};
-use safehouse_render::{entity::Entity, texture::{DynamicTexture, TextureType}, vertex_type::TexVertex};
+use safehouse_render::{entity::*, named_entity, texture::{DynamicTexture, TextureType}, vertex_type::TexVertex};
 pub use safehouse_render as render;
 use render::{RenderManager, gpu::{winit, wgpu, shaderprogram::Program}, model::ModelData, vertex_type::ColorVertex};
 use winit::{dpi::{LogicalSize, Size}, event_loop::EventLoop, window::WindowBuilder};
@@ -102,22 +102,9 @@ impl Entity for TextPane {
         )
     }
 
-    fn bindings_name() -> &'static str {
-        "TextPane"
-    }
-
-    fn model_name() -> &'static str {
-        "TextPane"
-    }
-
-    fn pipeline_name() -> &'static str {
-        "TextPane"
-    }
-
-    fn shader_name() -> &'static str {
-        "TextPane"
-    }
 }
+
+named_entity!(TextPane);
 
 fn main() {
     let event_loop = EventLoop::new().expect("Could not create event loop!");

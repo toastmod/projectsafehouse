@@ -3,7 +3,7 @@ use std::{f32::consts::PI, rc::Rc};
 use crate::{ball::Ball, pong::{BackForwVecs, PongPhysics, SCREEN_HEIGHT, SCREEN_WIDTH}, render};
 use render::{BINDGROUP_GLOBAL, BINDGROUP_SCENEOBJECT, entity::Entity, glam, gpu::{self, buffer::UniformPtr, program}, model::ModelData, scene::SceneObjectHandle, vertex_type::{AdvVertex, ColorVertex}, RenderManager};
 use gpu::{vertex::Vertex, wgpu,shaderprogram::Program};
-use safehouse_render::{entity::EntityPipeline, gpu::{binding::Binder, buffer::Buffer}};
+use safehouse_render::{entity::EntityPipeline, gpu::{binding::Binder, buffer::Buffer}, named_entity};
 
 pub const PADDLE_LENGTH: f32 = 0.15;
 pub const PADDLE_THICK: f32 = 0.01;
@@ -51,22 +51,10 @@ impl Entity for Paddle {
 
     }
     
-    fn model_name() -> &'static str {
-        "paddle_model"
-    }
-    
-    fn pipeline_name() -> &'static str {
-        "paddle_pipe"
-    }
-    
     fn load_bindings<'a>() -> Vec<Binder<Self>> where Self: Sized {
         vec![
             Binder::new(0, wgpu::ShaderStages::all(), &|x|{&x.color})
         ]
-    }
-    
-    fn bindings_name() -> &'static str {
-        "paddle_bindings"
     }
     
     fn load_shader(rm: &safehouse_render::RenderManager, group_model: u32, group_entity: u32) -> Option<gpu::shaderprogram::Program> {
@@ -112,12 +100,9 @@ impl Entity for Paddle {
         ))
     }
     
-    fn shader_name() -> &'static str {
-        "paddle_shader"
-    }
-    
-    
 }
+
+named_entity!(Paddle);
 
 impl Paddle {
     /// In this specific implementation, we are assuming a static screen size with no resizing.

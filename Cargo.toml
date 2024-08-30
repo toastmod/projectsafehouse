@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data", "glyphon", "walk-demo-engine", "scenetest", "safehouse-shared", "run-through-walls"]
+members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data", "glyphon", "walk-demo-engine", "safehouse-shared"]
 exclude = ["safehouse"]
 
 [workspace.dependencies]
@@ -15,3 +15,4 @@ image = {version = "0.25.1", features = ["jpeg","png"]}
 slicebytes = { path = "./slicebytes" }
 tagmap = { git = "http://github.com/toastmod/tagmap"}
 glyphon = { path = "./glyphon" }
+constcat = { git = "http://github.com/toastmod/constcat" }

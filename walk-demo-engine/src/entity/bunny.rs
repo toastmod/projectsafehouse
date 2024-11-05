@@ -1,14 +1,14 @@
-use safehouse_render::{entity::{Entity, EntityPipeline}, gpu::{wgpu, shaderprogram::Program, binding::Binder, buffer::VertexBuffer, program, wgpu::{PrimitiveState, ShaderStages}}, model::ModelData, named_entity, vertex_type::TexVertex};
+use safehouse_render::{entity::{Entity, EntityPipeline}, gpu::{binding::Binder, buffer::VertexBuffer, program, shaderprogram::Program, wgpu::{self, PrimitiveState, ShaderStages}}, model::ModelData, named_entity, scene::SceneObjectHandle, vertex_type::TexVertex};
 
 pub struct Bunny {
-
+    pub handle: SceneObjectHandle
 }
 
 impl Entity for Bunny {
     const ENTITY_TYPE_NAME: &'static str = "Bunny";
 
-    fn on_instantiate(rm: &mut safehouse_render::RenderManager<'_>, handle: safehouse_render::scene::SceneObjectHandle) -> Self {
-        Bunny {}
+    fn on_instantiate(rm: &mut safehouse_render::RenderManager<'_>, handle: SceneObjectHandle) -> Self {
+        Bunny { handle }
     }
 
     fn load_bindings<'a>() -> Vec<safehouse_render::gpu::binding::Binder<Self>> where Self: Sized {
@@ -44,10 +44,23 @@ impl Entity for Bunny {
                 @location(1) tcoord: vec2<f32>,
             }}
 
-            @vertex
-            fn vs_main() {{
-
+            struct TexVertexOut {{
+                @builtin(position) pos: vec4<f32>,
+                @location(0) tcoord: vec2<f32>,
             }}
+
+            @vertex
+            fn vs_main(in: TexVertexIn) -> TexVertexOut {{
+                var out: TexVertexOut;
+                out.pos = in.pos;
+                return out;
+            }}
+
+            @fragment
+            fn fs_main(vo: TexVertexOut) -> @location(0) vec4<f32> {{
+                return vec4<f32>(1.0,0.0,0.0,1.0); 
+            }}
+
 
             ")
         ))

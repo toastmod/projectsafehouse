@@ -1,11 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data", "glyphon", "walk-demo-engine", "safehouse-shared"]
+members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data", "glyphon", "walk-demo-engine", "safehouse-shared", "safehouse-shader", "safehouse-debug"]
 exclude = ["safehouse"]
 
 [workspace.dependencies]
 winit = "0.29"
-wgpu = { version = "0.19" }
+wgpu = { version = "22.1" }
 obj-rs = {git = "https://github.com/simnalamburt/obj-rs.git", branch = "main"}
 safehouse-gpu ={ path = "safehouse-gpu" }
 safehouse-render ={ path = "safehouse-render" }

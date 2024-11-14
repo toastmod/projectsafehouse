@@ -110,12 +110,12 @@ impl Controller {
         }
     }
 
-    pub fn device_input(&mut self, event: DeviceEvent, screen_calc: (f32,f32)) {
+    pub fn device_input(&mut self, event: DeviceEvent, screen_calc: (f32,f32), mmod: f32) {
         match event {
 
             DeviceEvent::MouseMotion { delta } => {
-                self.mousex += delta.0 as f32;
-                self.mousey += delta.1 as f32;
+                self.mousex += delta.0 as f32 * mmod;
+                self.mousey += delta.1 as f32 * mmod;
             },
 
             DeviceEvent::MouseWheel { delta } => {

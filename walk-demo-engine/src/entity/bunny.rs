@@ -1,7 +1,15 @@
 use safehouse_render::{entity::{Entity, EntityPipeline}, gpu::{binding::Binder, buffer::VertexBuffer, program, shaderprogram::Program, wgpu::{self, PrimitiveState, ShaderStages}}, model::ModelData, named_entity, scene::SceneObjectHandle, vertex_type::TexVertex};
 
+use super::ActiveEntity;
+
 pub struct Bunny {
     pub handle: SceneObjectHandle
+}
+
+impl ActiveEntity for Bunny {
+    fn get_sceneobject_handle(&self) -> SceneObjectHandle {
+        self.handle
+    }
 }
 
 impl Entity for Bunny {

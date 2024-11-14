@@ -1,6 +1,6 @@
 use safehouse_render::{camera::{subject_zoom_pos, Camera}, entity::Entity, gpu::winit};
 
-use crate::entity::bunny::Bunny;
+use crate::entity::{bunny::Bunny, ActiveEntity};
 
 use super::{Scene, SceneEvent, SceneInit};
 
@@ -22,11 +22,12 @@ impl SceneInit for WalkingScene {
 impl Scene for WalkingScene {
 
     fn update(&mut self, engine: &mut crate::Engine) -> SceneEvent {
-        engine.camera.upd8(false, engine.get_delta_time());
+        engine.camera.upd8(true, engine.get_delta_time().as_nanos());
 
-        // let sub_zoom_pos = subject_zoom_pos(engine.camera.position, engine.rm.get_scene_object(self.bunny.handle).unwrap.transform_ref(), 0.5);
+        let sub_zoom_pos = subject_zoom_pos(engine.camera.position, self.bunny.get_position(engine), f32::sin(engine.get_delta_time().as_secs_f32()));
 
-        // engine.camera.set_dir(dir);
+        engine.camera.set_pos(sub_zoom_pos);
+
         SceneEvent::Continue
     }
 }

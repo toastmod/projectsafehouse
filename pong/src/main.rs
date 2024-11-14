@@ -1,3 +1,4 @@
+use safehouse_render::camera::Camera;
 pub use safehouse_render as render;
 use std::{ops::Range, time::{Duration, Instant}};
 use ball::Ball;
@@ -27,6 +28,12 @@ fn main() {
 
     let mut rm = RenderManager::new(&window); 
 
+    let mut camera = Camera::new(pong::SCREEN_WIDTH, pong::SCREEN_HEIGHT);
+
+    camera.set_rot((-90.0f32.to_radians(), 0.0));
+    camera.set_pos((0.0,0.0,-5.0));
+    camera.upd8(true, 0);
+
     let mut pong = Pong::start(&mut rm);
 
     let mut last_rendered = Instant::now();
@@ -37,7 +44,7 @@ fn main() {
                 winit::event::WindowEvent::Resized(size) => rm.gpu_state.set_resize(size.width, size.height),
                 winit::event::WindowEvent::CloseRequested => {
                     pong.stop(); 
-                    ewt.exit()
+                    ewt.exit();
                 },
                 winit::event::WindowEvent::Destroyed => ewt.exit(),
                 winit::event::WindowEvent::KeyboardInput { device_id, event, is_synthetic } => {
@@ -71,7 +78,7 @@ fn main() {
                 winit::event::WindowEvent::RedrawRequested => {
                     if Instant::now().duration_since(last_rendered) >= Duration::from_millis(16) {
                         pong.update(&mut rm, last_rendered.elapsed());
-                        rm.render(&[]);
+                        rm.render(&[], &camera);
                         last_rendered = Instant::now();
                     }
                     rm.window.request_redraw();

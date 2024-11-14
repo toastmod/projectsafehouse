@@ -11,6 +11,7 @@ use crate::{camera::Camera, resource::ManagerResource};
 use crate::controller::Controller;
 use crate::entity::{Entity, NamedEntity};
 use gpu::{buffer::{Buffer, UniformPtr}, program, shaderprogram::Program, vertex::Vertex};
+use safehouse_gpu::buffer::Uniform;
 use crate::model::ModelData;
 
 pub use safehouse_gpu as gpu;
@@ -67,7 +68,7 @@ pub struct RenderManager<'window> {
 
     pub last_render_instant: Instant,
 
-    pub camera: Camera,
+    pub global_pvm: Rc<Uniform<glam::Mat4>>,
 
     pub dynamic_textures: TagMap<DynamicTexture>,
 
@@ -79,11 +80,24 @@ impl<'w> RenderManager<'w> {
     pub fn new(window: &'w gpu::winit::window::Window) -> Self {
         let mut gpu_state = gpu::State::new(window);
 
+        // let global_pvm = UniformPtr::new(&gpu_state, glam::Mat4::IDENTITY);
+        let global_pvm = Uniform::new(&gpu_state, &[glam::Mat4::IDENTITY]);
+
         let global_bglayout = Rc::new(gpu_state.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: None,
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
+                    visibility: wgpu::ShaderStages::all(),
+                    ty: wgpu::BindingType::Buffer { 
+                        ty: wgpu::BufferBindingType::Uniform, 
+                        has_dynamic_offset: false, 
+                        min_binding_size: Some(NonZeroU64::new(std::mem::size_of::<glam::Mat4>() as u64).unwrap())
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
                     visibility: wgpu::ShaderStages::all(),
                     ty: wgpu::BindingType::Buffer { 
                         ty: wgpu::BufferBindingType::Uniform, 
@@ -112,7 +126,7 @@ impl<'w> RenderManager<'w> {
         }));
 
         let default_pipelayout = gpu_state.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { 
-            label: Some("default_pipe_layout"), 
+            label: Some("default_pipelayout"), 
             bind_group_layouts: &[
                 global_bglayout.as_ref(),
                 sceneobj_bglayout.as_ref()
@@ -124,6 +138,8 @@ impl<'w> RenderManager<'w> {
             &gpu_state,
             source: format!("
                 @group({BINDGROUP_GLOBAL}) @binding(0)
+                var<uniform> pvm: mat4x4<f32>;
+                @group({BINDGROUP_GLOBAL}) @binding(1)
                 var<uniform> time: f32;
 
                 @group({BINDGROUP_SCENEOBJECT}) @binding(0)
@@ -144,7 +160,7 @@ impl<'w> RenderManager<'w> {
                     var o: ColorVertexOutput;
                     o.color = i.color;
                     var t = time;
-                    o.pos = model_mat * vec4<f32>(i.pos.x, i.pos.y+(sin(time)*0.1), i.pos.z, i.pos.w);
+                    o.pos = pvm * vec4<f32>(i.pos.x, i.pos.y+(sin(time)*0.1), i.pos.z, i.pos.w);
                     return o;
                 }}
 
@@ -161,7 +177,8 @@ impl<'w> RenderManager<'w> {
             vertex: wgpu::VertexState { 
                 module: &shader.module, 
                 entry_point: "vs_main", 
-                buffers: &[crate::vertex_type::ColorVertex::desc().clone()] 
+                buffers: &[crate::vertex_type::ColorVertex::desc().clone()],
+                compilation_options: Default::default(), 
             }, 
             primitive: wgpu::PrimitiveState { 
                 topology: wgpu::PrimitiveTopology::TriangleList, 
@@ -177,9 +194,11 @@ impl<'w> RenderManager<'w> {
                 entry_point: "fs_main", 
                 targets: &[
                     Some(wgpu::ColorTargetState { format: gpu_state.config.format.clone(), blend: None, write_mask: wgpu::ColorWrites::ALL })
-                ] 
+                ],
+                compilation_options: Default::default(), 
             }), 
-            multiview: None 
+            multiview: None,
+            cache: None
         });
 
         gpu_state.add_sampler("default", &wgpu::SamplerDescriptor { 
@@ -195,6 +214,10 @@ impl<'w> RenderManager<'w> {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
+                    resource: global_pvm.get_buffer().as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
                     resource: time.get_buffer().as_entire_binding(),
                 },
             ],
@@ -202,7 +225,6 @@ impl<'w> RenderManager<'w> {
 
         let start_instant = Instant::now();
 
-        let camera = Camera::new(gpu_state.config.width as f32, gpu_state.config.height as f32);
 
         // let mut controllers = TagMap::new();
 
@@ -221,18 +243,24 @@ impl<'w> RenderManager<'w> {
             default_pipeline,
             window,
             start_instant,
-            camera,
             last_render_instant: Instant::now(),
             entity_bglayout_cache: HashMap::new(),
             dynamic_textures: TagMap::new(),
             dyntexture_queue: VecDeque::new(),
+            global_pvm,
         }
-
     }
 
     /// Update the amount of time elapsed since the renderer started.
     pub fn update_time(&mut self) {
         *self.time.as_mut() = self.start_instant.elapsed().as_secs_f32();
+    }
+
+    /// Calculate and update the global PVM matrix using a `Camera` (PV) and a model (M)
+    pub fn update_pvm(&self, camera: &Camera, model: &glam::Mat4) {
+        self.global_pvm.update(&self.gpu_state, &[
+            camera.calc_pvm(model)
+        ]);
     }
 
     pub fn add_dyn_texture(&mut self, dt: DynamicTexture) -> usize {
@@ -258,7 +286,7 @@ impl<'w> RenderManager<'w> {
         }
     }
 
-    pub fn render<'pass>(&self, dynamic_texture_queue: &'pass [&'pass DynamicTexture]) {
+    pub fn render<'pass>(&self, dynamic_texture_queue: &'pass [&'pass DynamicTexture], camera: &Camera) {
 
         let mut cmd = self.gpu_state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         let surfacetexture = self.gpu_state.surface.get_current_texture().unwrap();
@@ -285,6 +313,7 @@ impl<'w> RenderManager<'w> {
 
             // update globals
             self.time.update(&self.gpu_state);
+            // self.camera.force_camera_update_flag
 
             // Render each SceneObject
             for objhandle in &self.scene_queue {
@@ -322,6 +351,7 @@ impl<'w> RenderManager<'w> {
 
                 // Render each group of vertices
                 for group in obj.model_data.groups.iter().cloned() {
+                    self.update_pvm(camera, obj.model_matrix.as_ref());
                     renderpass.draw(group, 0..1);
                 }
                 
@@ -337,9 +367,9 @@ impl<'w> RenderManager<'w> {
     //     self.controllers.add(Controller::new(None))
     // }
 
-    pub fn build_bindgroup(&mut self) {
+    // pub fn build_bindgroup(&mut self) {
         
-    }
+    // }
 
     pub fn add_model(&mut self, model_name: &str, model_data: ModelData) -> Rc<ModelData> {
         let r = Rc::new(model_data);
@@ -416,7 +446,8 @@ impl<'w> RenderManager<'w> {
                     vertex: wgpu::VertexState {
                         module: &shader.module, 
                         entry_point: "vs_main", 
-                        buffers: &[model.vertex_buffer.desc.clone()] 
+                        buffers: &[model.vertex_buffer.desc.clone()],
+                        compilation_options: Default::default(), 
                     },
                     primitive: pipeargs.primitive,
                     depth_stencil: pipeargs.depth_stencil,
@@ -428,10 +459,12 @@ impl<'w> RenderManager<'w> {
                             format: self.gpu_state.config.format.clone(),
                             blend: None,
                             write_mask: wgpu::ColorWrites::all() 
-                        })]
+                        })],
+                        compilation_options: Default::default(), 
                     }),
                     multisample: wgpu::MultisampleState::default(),
-                    multiview: None 
+                    multiview: None, 
+                    cache: None
                 }));
         
                 self.gpu_state.render_pipelines.insert(String::from(E::pipeline_name()), Rc::clone(&pipe));

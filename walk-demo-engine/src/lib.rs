@@ -3,7 +3,8 @@ pub mod scene;
 
 use std::time::{Duration, Instant};
 
-use safehouse_render::camera::Camera;
+use entity::ActiveEntity;
+use safehouse_render::{camera::Camera, scene::SceneObject};
 pub use safehouse_render as render;
 pub use safehouse_render::gpu as gpu;
 use render::{gpu::winit::{self, dpi::{LogicalSize, Size}, event_loop::EventLoop, window::{Window, WindowBuilder}}, texture::DynamicTexture, RenderManager};
@@ -65,9 +66,13 @@ impl<'window, 'engine> Engine<'window, 'engine> {
         Box::new(S::init(self))
     }
 
-    /// Gets the delta time since last rendered in nanoseconds
-    pub fn get_delta_time(&self) -> u128 {
-        self.last_rendered.elapsed().as_nanos()
+    /// Gets the delta time since last rendered 
+    pub fn get_delta_time(&self) -> Duration {
+        self.last_rendered.elapsed()
+    }
+
+    pub fn get_scene_object(&self, entity: &dyn ActiveEntity) -> Option<&SceneObject> {
+        self.rm.get_scene_object(entity.get_sceneobject_handle())
     }
 
     pub fn event_loop(&mut self, scene: &mut Box<dyn Scene>, root_event: winit::event::Event<()>, ewt: &winit::event_loop::EventLoopWindowTarget<()>) -> SceneEvent {
@@ -89,7 +94,7 @@ impl<'window, 'engine> Engine<'window, 'engine> {
                         // println!("draw");
                         self.rm.gpu_state.update_resize();
                         self.rm.update_time();
-                        self.rm.render(self.dyn_texture_queue.as_slice());
+                        self.rm.render(self.dyn_texture_queue.as_slice(), &self.camera);
                         if !self.dyn_texture_queue.is_empty() {
                             self.dyn_texture_queue.clear();
                         }

@@ -220,6 +220,7 @@ impl Cache {
                         module: shader,
                         entry_point: "vs_main",
                         buffers: vertex_buffers,
+                        compilation_options: Default::default(),
                     },
                     fragment: Some(FragmentState {
                         module: shader,
@@ -229,6 +230,7 @@ impl Cache {
                             blend: Some(BlendState::ALPHA_BLENDING),
                             write_mask: ColorWrites::default(),
                         })],
+                        compilation_options: Default::default(),
                     }),
                     primitive: PrimitiveState {
                         topology: PrimitiveTopology::TriangleStrip,
@@ -237,6 +239,7 @@ impl Cache {
                     depth_stencil: depth_stencil.clone(),
                     multisample,
                     multiview: None,
+                    cache: todo!(),
                 }));
 
                 cache.push((format, multisample, depth_stencil, pipeline.clone()));

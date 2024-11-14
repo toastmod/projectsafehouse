@@ -103,6 +103,7 @@ fn main() {
             module: &prog.module,
             entry_point: "vs_main",
             buffers: &[ColorVertex::desc().clone()],
+            compilation_options: Default::default(),
         }, 
         primitive: wgpu::PrimitiveState { 
             topology: wgpu::PrimitiveTopology::TriangleList, 
@@ -121,9 +122,11 @@ fn main() {
                 module: &prog.module,
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState { format: state.config.format, blend: Some(wgpu::BlendState::ALPHA_BLENDING), write_mask: wgpu::ColorWrites::ALL })],
+                compilation_options: Default::default(),
             }
         ), 
-        multiview: None 
+        multiview: None,
+        cache: None, 
     });
 
     let mut wobble = safehouse_gpu::buffer::UniformPtr::new(&state, 0f32);

@@ -60,7 +60,7 @@ impl Camera {
     }
 
     pub fn set_pos(&mut self, pos: (f32, f32, f32)) {
-        self.position = pos;
+        self.desired_pos = pos;
     }
     pub fn hard_set_pos(&mut self, pos: (f32, f32, f32)) {
         self.position = pos;
@@ -176,8 +176,10 @@ impl Camera {
     //     self.PVM = self.PV * self.model;
     // }
 
-    pub fn calc_pvm(&self, model: glam::Mat4) -> glam::Mat4 {
-        self.projection * self.view * model
+    //TODO: Add a calc_pv function that uses an internal PV for pre-calculating before PVM
+
+    pub fn calc_pvm(&self, model: &glam::Mat4) -> glam::Mat4 {
+        self.projection * self.view * *model
     }
 
     pub fn lookat_upd8(&mut self) -> Mat4 {
@@ -207,6 +209,7 @@ impl Camera {
         if self.position != self.desired_pos {
             let delta = subv3f(self.desired_pos,self.position);
             //let movement = mulv3f((delta.0.sqrt(),delta.1.sqrt(),delta.2.sqrt()), (dt/1000.0,dt/1000.0,dt/1000.0));
+            // TODO: Camera speed should be time relative (e.g: units per nanosecond )
             let movement = mulv3f(delta,(self.camera_speed,self.camera_speed,self.camera_speed));
             self.position = addv3f(self.position,movement);
             self.view = self.lookat_upd8();

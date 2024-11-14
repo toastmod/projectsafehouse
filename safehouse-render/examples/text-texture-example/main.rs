@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, rc::Rc, thread::park_timeout_ms, time::{Duration, Instant}};
 use safehouse_gpu::{binding::Binder, buffer::VertexBuffer, program, texture::sampler::TextureSampler};
-use safehouse_render::{entity::*, named_entity, texture::{DynamicTexture, TextureType}, vertex_type::TexVertex};
+use safehouse_render::{camera::Camera, entity::*, named_entity, texture::{DynamicTexture, TextureType}, vertex_type::TexVertex};
 pub use safehouse_render as render;
 use render::{RenderManager, gpu::{winit, wgpu, shaderprogram::Program}, model::ModelData, vertex_type::ColorVertex};
 use winit::{dpi::{LogicalSize, Size}, event_loop::EventLoop, window::WindowBuilder};
@@ -117,6 +117,8 @@ fn main() {
 
     let mut rm = RenderManager::new(&window); 
 
+    let mut camera = Camera::new(800f32, 600f32);
+
     rm.load_entity::<TextPane>();
     let mut pane = rm.spawn_sceneobject_entity::<TextPane>("TextPane");
     pane.text_texture.prepare(&mut rm);
@@ -141,7 +143,7 @@ fn main() {
                         // println!("draw");
                         rm.gpu_state.update_resize();
                         rm.update_time();
-                        rm.render(dyn_texture_queue.as_slice());
+                        rm.render(dyn_texture_queue.as_slice(), &camera);
                         if !dyn_texture_queue.is_empty() {
                             dyn_texture_queue.clear();
                         }

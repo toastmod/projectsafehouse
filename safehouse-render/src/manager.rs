@@ -3,9 +3,10 @@ pub use super::bindgroups::{
     BINDGROUP_SCENEOBJECT,
 };
 use std::collections::VecDeque;
+use std::sync::Arc;
 use std::{collections::HashMap, hash::Hash, num::NonZeroU64, rc::Rc, time::Instant};
 
-use crate::texture::DynamicTexture;
+use crate::texture::{DynamicTexture, DynamicTextureHandle};
 // use crate::bindgroups::BINDGROUP_SHADER;
 use crate::{camera::Camera, resource::ManagerResource};
 use crate::controller::Controller;
@@ -21,12 +22,12 @@ use crate::scene::{SceneObject, SceneObjectHandle, ControllerHandle};
 use gpu::wgpu;
 use tagmap::TagMap;
 
-pub struct RenderManager<'window> {
+pub struct RenderManager {
 
-    pub window: &'window gpu::winit::window::Window,
+    pub window: Arc<gpu::winit::window::Window>,
     
     /// The GPU backend state.
-    pub gpu_state: gpu::State<'window>,
+    pub gpu_state: gpu::State,
 
     /// The default fallback rendering pipeline.
     pub default_pipeline: Rc<wgpu::RenderPipeline>,
@@ -72,12 +73,12 @@ pub struct RenderManager<'window> {
 
     pub dynamic_textures: TagMap<DynamicTexture>,
 
-    dyntexture_queue: VecDeque<usize>
+    dyntexture_queue: VecDeque<DynamicTextureHandle>
 
 }
 
-impl<'w> RenderManager<'w> {
-    pub fn new(window: &'w gpu::winit::window::Window) -> Self {
+impl RenderManager {
+    pub fn new(window: &Arc<gpu::winit::window::Window>) -> Self {
         let mut gpu_state = gpu::State::new(window);
 
         // let global_pvm = UniformPtr::new(&gpu_state, glam::Mat4::IDENTITY);
@@ -176,7 +177,7 @@ impl<'w> RenderManager<'w> {
             layout: Some(&default_pipelayout), 
             vertex: wgpu::VertexState { 
                 module: &shader.module, 
-                entry_point: "vs_main", 
+                entry_point: Some("vs_main"), 
                 buffers: &[crate::vertex_type::ColorVertex::desc().clone()],
                 compilation_options: Default::default(), 
             }, 
@@ -191,7 +192,7 @@ impl<'w> RenderManager<'w> {
             multisample: wgpu::MultisampleState::default(), 
             fragment: Some(wgpu::FragmentState { 
                 module: &shader.module, 
-                entry_point: "fs_main", 
+                entry_point: Some("fs_main"), 
                 targets: &[
                     Some(wgpu::ColorTargetState { format: gpu_state.config.format.clone(), blend: None, write_mask: wgpu::ColorWrites::ALL })
                 ],
@@ -241,7 +242,7 @@ impl<'w> RenderManager<'w> {
             // shader_cache: HashMap::new(),
             time,
             default_pipeline,
-            window,
+            window: Arc::clone(window),
             start_instant,
             last_render_instant: Instant::now(),
             entity_bglayout_cache: HashMap::new(),
@@ -263,11 +264,15 @@ impl<'w> RenderManager<'w> {
         ]);
     }
 
-    pub fn add_dyn_texture(&mut self, dt: DynamicTexture) -> usize {
+    pub fn queue_dyn_texture(&mut self, handle: DynamicTextureHandle) {
+        self.dyntexture_queue.push_back(handle);
+    }
+
+    pub fn add_dyn_texture(&mut self, dt: DynamicTexture) -> DynamicTextureHandle {
         self.dynamic_textures.add(dt)
     }
 
-    pub fn get_dyn_texture(&mut self, handle: usize) -> Option<&mut DynamicTexture> {
+    pub fn get_dyn_texture(&mut self, handle: DynamicTextureHandle) -> Option<&mut DynamicTexture> {
         self.dynamic_textures[handle].as_mut()
     }
 
@@ -286,14 +291,25 @@ impl<'w> RenderManager<'w> {
         }
     }
 
-    pub fn render<'pass>(&self, dynamic_texture_queue: &'pass [&'pass DynamicTexture], camera: &Camera) {
+    pub fn render<'pass>(&mut self, camera: &Camera) {
 
         let mut cmd = self.gpu_state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         let surfacetexture = self.gpu_state.surface.get_current_texture().unwrap();
         {
-            for dt in dynamic_texture_queue {
-                dt.render_self(&mut cmd);
+
+            while !self.dyntexture_queue.is_empty() {
+                let dyntex = if let Some(dt) = self.dyntexture_queue.pop_back() {
+                    if let Some(dtt) = self.dynamic_textures[dt].as_mut() {
+                        dtt.render_self(&mut cmd);
+                    }else {
+                        println!("A dynamic texture was queued but it's index did not contain data.");
+                        continue;
+                    }
+                } else {
+                    continue;
+                };
             }
+
             let view = surfacetexture.texture.create_view(&wgpu::TextureViewDescriptor::default());
             let mut renderpass = cmd.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
@@ -309,7 +325,7 @@ impl<'w> RenderManager<'w> {
             });
 
             // Set global bindgroup
-            renderpass.set_bind_group(BINDGROUP_GLOBAL, &self.global_bindgroup, &[]);
+            renderpass.set_bind_group(BINDGROUP_GLOBAL, self.global_bindgroup.as_ref(), &[]);
 
             // update globals
             self.time.update(&self.gpu_state);
@@ -325,7 +341,7 @@ impl<'w> RenderManager<'w> {
                 obj.update_matrix(self);
                 
                 // Set the SceneObject bindgroup for this object
-                renderpass.set_bind_group(BINDGROUP_SCENEOBJECT, &obj.sceneobject_bindgroup, &[]);
+                renderpass.set_bind_group(BINDGROUP_SCENEOBJECT, obj.sceneobject_bindgroup.as_ref(), &[]);
 
                 let mut curbg_id = BINDGROUP_SCENEOBJECT+1;
                 
@@ -338,7 +354,7 @@ impl<'w> RenderManager<'w> {
 
                 // Entity BG should only be active if it's model is, otherwise it wouldn't make sense to use the shader.
                 if let Some(ebg) = obj.entity_bindgroup.as_ref() {
-                    renderpass.set_bind_group(curbg_id, ebg, &[]);
+                    renderpass.set_bind_group(curbg_id, ebg.as_ref(), &[]);
                 }
 
                 // TODO: impl shader bindgroup
@@ -445,7 +461,7 @@ impl<'w> RenderManager<'w> {
                     layout: Some(&pipe_layout),
                     vertex: wgpu::VertexState {
                         module: &shader.module, 
-                        entry_point: "vs_main", 
+                        entry_point: Some("vs_main"), 
                         buffers: &[model.vertex_buffer.desc.clone()],
                         compilation_options: Default::default(), 
                     },
@@ -453,7 +469,7 @@ impl<'w> RenderManager<'w> {
                     depth_stencil: pipeargs.depth_stencil,
                     fragment: Some(wgpu::FragmentState {
                         module: &shader.module,
-                        entry_point: "fs_main",
+                        entry_point: Some("fs_main"),
                         // TODO: Support for multiple color targets
                         targets: &[Some(wgpu::ColorTargetState {
                             format: self.gpu_state.config.format.clone(),

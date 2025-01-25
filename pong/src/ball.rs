@@ -17,7 +17,7 @@ impl Entity for Ball {
 
     const ENTITY_TYPE_NAME: &'static str = "ball";
 
-    fn on_instantiate<'w>(rm: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
+    fn on_instantiate(rm: &mut RenderManager, handle: SceneObjectHandle) -> Self {
         let mut b = Self::default();
         b.speed = 1.4; // 0.5 units/second
         // Initial distribution of speed stat

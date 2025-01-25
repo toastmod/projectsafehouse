@@ -5,4 +5,6 @@ edition = "2021"
 
 [dependencies]
 safehouse-render = {workspace = true}
-imgui-wgpu = "0.24.0"
+imgui-wgpu = {git = "https://github.com/Yatekii/imgui-wgpu-rs.git"}
+imgui = "*"
+imgui-winit-support = "*"

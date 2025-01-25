@@ -1,18 +1,19 @@
 [workspace]
 resolver = "2"
-members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data", "glyphon", "walk-demo-engine", "safehouse-shared", "safehouse-shader", "safehouse-debug"]
+members = ["safehouse-render", "safehouse-gpu", "slicebytes", "pong", "safehouse-data", "walk-demo-engine", "safehouse-shared", "safehouse-shader", "safehouse-debug", "winit-app-handler"]
 exclude = ["safehouse"]
 
 [workspace.dependencies]
-winit = "0.29"
-wgpu = { version = "22.1" }
+winit = "0.30"
+wgpu = { version = "24.0.1" }
 obj-rs = {git = "https://github.com/simnalamburt/obj-rs.git", branch = "main"}
 safehouse-gpu ={ path = "safehouse-gpu" }
 safehouse-render ={ path = "safehouse-render" }
 safehouse-data ={ path = "safehouse-data" }
+winit-app-handler = {path = "winit-app-handler"}
 futures = "*"
 image = {version = "0.25.1", features = ["jpeg","png"]}
 slicebytes = { path = "./slicebytes" }
 tagmap = { git = "http://github.com/toastmod/tagmap"}
-glyphon = { path = "./glyphon" }
+glyphon = { git = "https://github.com/grovesNL/glyphon" }
 constcat = { git = "http://github.com/toastmod/constcat" }

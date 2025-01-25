@@ -18,7 +18,7 @@ impl Entity for Paddle {
 
     const ENTITY_TYPE_NAME: &'static str = "Paddle";
 
-    fn on_instantiate<'w>(rm: &mut RenderManager<'w>, handle: SceneObjectHandle) -> Self {
+    fn on_instantiate(rm: &mut RenderManager, handle: SceneObjectHandle) -> Self {
         let color = UniformPtr::new(&rm.gpu_state, [0.0, 1.0, 0.0]);
 
         Self {

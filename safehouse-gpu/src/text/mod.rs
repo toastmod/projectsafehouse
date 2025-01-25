@@ -25,7 +25,7 @@ impl TextRenderState {
 
         let physical_width = (state.config.width as f64 * scale_factor) as f32;
         let physical_height = (state.config.height as f64 * scale_factor) as f32;
-        buffer.set_size(&mut font_system, physical_width, physical_height);
+        buffer.set_size(&mut font_system, Some(physical_width), Some(physical_height));
 
         let mut trs = Self {
             font_system,
@@ -43,7 +43,7 @@ impl TextRenderState {
     }
 
     pub fn resize(&mut self, physical_width: f32, physical_height: f32) {
-        self.buffer.set_size(&mut self.font_system, physical_width, physical_height);
+        self.buffer.set_size(&mut self.font_system, Some(physical_width), Some(physical_height));
     }
 
     pub fn set_text(&mut self, text: &str) {
@@ -76,6 +76,7 @@ impl TextRenderState {
                         bottom: 160,
                     },
                     default_color: Color::rgb(255, 0, 0),
+                    custom_glyphs: &[],
                 }],
                 &mut self.swash_cache
             )

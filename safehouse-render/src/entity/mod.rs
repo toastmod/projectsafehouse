@@ -94,7 +94,7 @@ pub trait Entity {
     /// Functionality for when an Entity instance is created.
     /// Note: The Entity bindgroup is created after this call.
     /// Therefore this call only initializes the Entity on the CPU-side, although buffers can be written to at this point anyway. 
-    fn on_instantiate(rm: &mut crate::RenderManager<'_>, handle: SceneObjectHandle) -> Self;
+    fn on_instantiate(rm: &mut crate::RenderManager, handle: SceneObjectHandle) -> Self;
 
     // Data Loading
     fn load_bindings<'a>() -> Vec<Binder<Self>> where Self: Sized;

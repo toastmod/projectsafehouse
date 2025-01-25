@@ -7,14 +7,15 @@ edition = "2021"
 
 [dependencies]
 wgpu = {workspace = true}
-winit = {workspace = true}
+winit = {workspace = true }
 futures = {workspace = true}
 image = {workspace = true}
 slicebytes = {workspace = true}
 glyphon = { workspace = true, optional = true, default-features = false}
 
 [dev-dependencies]
-winit = { workspace = true }
+winit = { workspace = true, default-features = false}
+winit-app-handler = {workspace = true}
 
 [features]
 text = ["glyphon"]

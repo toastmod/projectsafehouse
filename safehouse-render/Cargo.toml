@@ -10,3 +10,6 @@ safehouse-gpu = { workspace = true, features = ["text"]}
 tagmap = { workspace = true }
 constcat = { workspace = true }
 glam = "0.27.0"
+
+[dev-dependencies]
+winit-app-handler = {workspace = true}

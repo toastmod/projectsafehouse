@@ -1,0 +1,7 @@
+[package]
+name = "winit-app-handler"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winit = {workspace = true}

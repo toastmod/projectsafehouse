@@ -3,7 +3,7 @@ pub use safehouse_render as render;
 use std::{ops::Range, time::{Duration, Instant}};
 use ball::Ball;
 use render::{entity::Entity, gpu::winit, model::ModelData, vertex_type::ColorVertex, RenderManager};
-use winit::{dpi::{LogicalSize, Size}, event::KeyEvent, event_loop::EventLoop, window::WindowBuilder};
+use winit::{dpi::{LogicalSize, Size}, event::KeyEvent, event_loop::EventLoop};
 
 use paddle::Paddle;
 use pong::Pong;
@@ -78,7 +78,7 @@ fn main() {
                 winit::event::WindowEvent::RedrawRequested => {
                     if Instant::now().duration_since(last_rendered) >= Duration::from_millis(16) {
                         pong.update(&mut rm, last_rendered.elapsed());
-                        rm.render(&[], &camera);
+                        rm.render(&camera);
                         last_rendered = Instant::now();
                     }
                     rm.window.request_redraw();

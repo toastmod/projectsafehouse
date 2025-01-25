@@ -1,12 +1,14 @@
 use std::{collections::VecDeque, rc::Rc, thread::park_timeout_ms, time::{Duration, Instant}};
 use safehouse_gpu::{binding::Binder, buffer::VertexBuffer, program, texture::sampler::TextureSampler};
-use safehouse_render::{camera::Camera, entity::*, named_entity, texture::{DynamicTexture, TextureType}, vertex_type::TexVertex};
+use safehouse_render::{camera::Camera, entity::*, named_entity, texture::{DynamicTexture, DynamicTextureHandle, TextureType}, vertex_type::TexVertex};
 pub use safehouse_render as render;
 use render::{RenderManager, gpu::{winit, wgpu, shaderprogram::Program}, model::ModelData, vertex_type::ColorVertex};
-use winit::{dpi::{LogicalSize, Size}, event_loop::EventLoop, window::WindowBuilder};
+use winit::{dpi::{LogicalSize, Size}, event_loop::EventLoop };
+use winit_app_handler::{WinitApp, WinitState};
 
 struct TextPane {
-    text_texture: DynamicTexture, 
+    dyn_texture_handle: DynamicTextureHandle,
+    dyn_texture_ref: Rc<safehouse_gpu::texture::Texture>,
     text_texture_sampler: Rc<TextureSampler> 
 }
 
@@ -17,16 +19,23 @@ impl TextPane {
 impl Entity for TextPane {
     const ENTITY_TYPE_NAME: &'static str = "TextPane";
 
-    fn on_instantiate(rm: &mut safehouse_render::RenderManager<'_>, handle: safehouse_render::scene::SceneObjectHandle) -> Self {
+    fn on_instantiate(rm: &mut safehouse_render::RenderManager, handle: safehouse_render::scene::SceneObjectHandle) -> Self {
+        // Create a new DynmaicTexture
+        let mut text_texture = DynamicTexture::new_text(rm, wgpu::Color::TRANSPARENT, "This is some text, can you see it?");
+        text_texture.prepare(rm);
+        let dyn_texture_handle = rm.add_dyn_texture(text_texture);
+        let dyn_texture_ref = Rc::clone(&rm.get_dyn_texture(dyn_texture_handle).unwrap().texture);
+        rm.queue_dyn_texture(dyn_texture_handle);
         Self {
-            text_texture: DynamicTexture::new_text(rm, wgpu::Color::TRANSPARENT, "This is some text, can you see it?"),
+            dyn_texture_handle,
+            dyn_texture_ref,
             text_texture_sampler: Rc::clone(rm.gpu_state.get_sampler("default")),
         } 
     }
 
     fn load_bindings<'a>() -> Vec<Binder<Self>> where Self: Sized {
         vec![
-            Binder::new(0, crate::render::gpu::wgpu::ShaderStages::all(), &|x| { &x.text_texture } ),
+            Binder::new(0, crate::render::gpu::wgpu::ShaderStages::all(), &|x| { x.dyn_texture_ref.as_ref() } ),
             Binder::new(1, crate::render::gpu::wgpu::ShaderStages::all(), &|x| { x.text_texture_sampler.as_ref() } )
         ]
     }
@@ -106,55 +115,67 @@ impl Entity for TextPane {
 
 named_entity!(TextPane);
 
-fn main() {
-    let event_loop = EventLoop::new().expect("Could not create event loop!");
-    let wb = WindowBuilder::new();
-    let window = wb
-    .with_title("Text Texture Example")
-    .with_inner_size(Size::new(LogicalSize::new(800,600)))
-    .build(&event_loop)
-    .expect("Could not create window!");
+struct TextTextureExample {
+    rm: RenderManager,
+    camera: Camera,
+    pane: TextPane,
+    last_rendered: Instant,
+}
 
-    let mut rm = RenderManager::new(&window); 
+impl WinitApp for TextTextureExample {
+    type UserEvent = ();
 
-    let mut camera = Camera::new(800f32, 600f32);
+    fn on_start(window: &std::sync::Arc<winit::window::Window>) -> Self {
 
-    rm.load_entity::<TextPane>();
-    let mut pane = rm.spawn_sceneobject_entity::<TextPane>("TextPane");
-    pane.text_texture.prepare(&mut rm);
+        let mut rm = RenderManager::new(&window); 
 
-    let mut dyn_texture_queue = vec![
-        &pane.text_texture
-    ];
+        let mut camera = Camera::new(800f32, 600f32);
 
-    let mut last_rendered = Instant::now();
+        rm.load_entity::<TextPane>();
+        let mut pane = rm.spawn_sceneobject_entity::<TextPane>("TextPane");
 
-    let _ = event_loop.run(move |root_event, ewt|{
-        match root_event {
-            winit::event::Event::WindowEvent { window_id, event } => match event {
-                winit::event::WindowEvent::Resized(size) => rm.gpu_state.set_resize(size.width, size.height),
-                winit::event::WindowEvent::CloseRequested => ewt.exit(),
-                winit::event::WindowEvent::Destroyed => ewt.exit(),
-                winit::event::WindowEvent::CursorMoved { device_id, position } => {
-                    // pong.mouse_moved(&mut engine, position.x as f32, position.y as f32);
-                },
-                winit::event::WindowEvent::RedrawRequested => {
-                    if Instant::now().duration_since(last_rendered) >= Duration::from_millis(16) {
-                        // println!("draw");
-                        rm.gpu_state.update_resize();
-                        rm.update_time();
-                        rm.render(dyn_texture_queue.as_slice(), &camera);
-                        if !dyn_texture_queue.is_empty() {
-                            dyn_texture_queue.clear();
-                        }
-                    }
-                    rm.window.request_redraw();
-                }
+        let mut last_rendered = Instant::now();
 
-                _ => (),
-            },
-            // engine::gpu::winit::event::Event::LoopExiting => todo!(),
-            _ => ()
+        Self {
+            rm,
+            camera,
+            pane,
+            last_rendered,
         }
-    });
+    }
+
+    fn on_contstructed(&mut self, window: &std::sync::Arc<winit::window::Window>) {
+        
+    }
+
+    fn on_event(&mut self, window: &std::sync::Arc<winit::window::Window>, event_loop: &winit::event_loop::ActiveEventLoop, event: winit::event::WindowEvent) {
+        match event {
+            winit::event::WindowEvent::Resized(size) => self.rm.gpu_state.set_resize(size.width, size.height),
+            winit::event::WindowEvent::CloseRequested => event_loop.exit(),
+            winit::event::WindowEvent::Destroyed => event_loop.exit(),
+            winit::event::WindowEvent::CursorMoved { device_id, position } => {
+                // pong.mouse_moved(&mut engine, position.x as f32, position.y as f32);
+            },
+            winit::event::WindowEvent::RedrawRequested => {
+                if Instant::now().duration_since(self.last_rendered) >= Duration::from_millis(16) {
+                    // println!("draw");
+                    self.rm.gpu_state.update_resize();
+                    self.rm.update_time();
+                    self.rm.render(&self.camera);
+
+                }
+                window.request_redraw();
+            }
+
+            _ => (),
+        }
+    }
+
+    fn on_device_event(&mut self, window: &std::sync::Arc<winit::window::Window>, event_loop: &winit::event_loop::ActiveEventLoop, event: winit::event::DeviceEvent) {
+        todo!()
+    }
+}
+
+fn main() {
+    WinitState::<TextTextureExample>::run();
 }

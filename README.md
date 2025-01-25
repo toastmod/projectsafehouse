@@ -8,7 +8,7 @@ The goal of this project is to make a game engine that can be broken down into s
 
 Each module builds off of other modules, hence being incremental.
 
--   `safehouse-engine`: The object manager with higher, game-engine-level concepts.
+-   `safehouse-engine` (TBD): The object manager with higher, game-engine-level concepts.
     -   `safehouse-render`: The rendering manager.
         -   `safehouse-gpu`: The GPU state.
 
@@ -18,5 +18,5 @@ These are modules that are not part of the main hierarchy, and are to be used to
 
 -   `safehouse-data`
     -   A build-time asset data packager.
--   `safehouse-debug`
+-   `safehouse-debug` (WIP)
     -   A debugger that is familiar with all modules

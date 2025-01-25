@@ -4,6 +4,8 @@ use std::rc::Rc;
 
 use safehouse_gpu::binding::{Bindable, BindableType};
 
+pub type DynamicTextureHandle = usize;
+
 pub enum TextureType {
     Dynamic(usize),
     Static(Rc<crate::gpu::texture::Texture>)

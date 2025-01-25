@@ -4,7 +4,7 @@ pub mod texture;
 pub mod dataunit;
 pub mod vertex;
 pub mod binding;
-use std::{collections::HashMap, rc::Rc };
+use std::{collections::HashMap, rc::Rc, sync::Arc };
 use texture::sampler::TextureSampler;
 use wgpu::Backends;
 pub use wgpu;
@@ -15,10 +15,11 @@ pub mod text;
 
 #[cfg(feature="text")]
 pub use text::*;
+use winit::{application::ApplicationHandler, event_loop::ActiveEventLoop, window::{Window, WindowAttributes}};
 
-pub struct State<'window> {
+pub struct State {
     // GPU Context 
-    pub surface: wgpu::Surface<'window>,
+    pub surface: wgpu::Surface<'static>,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub config: wgpu::SurfaceConfiguration,
@@ -32,17 +33,19 @@ pub struct State<'window> {
     pub resized: bool,
 }
 
-impl<'window> State<'window> {
+impl State {
 
-    pub fn new(window: &'window winit::window::Window) -> Self {
+    pub fn new<'window_ref>(window: &'window_ref Arc<Window>) -> Self {
+
+        // TODO: Set backend and limits as optional parameters
 
         let size = window.inner_size();
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor { 
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { 
             backends: Backends::all(),
             ..Default::default() 
         });
 
-        let surface = instance.create_surface(window).unwrap();
+        let surface = instance.create_surface(Arc::clone(window)).unwrap();
 
         let adapter = instance
         .enumerate_adapters(Backends::all())
@@ -83,7 +86,7 @@ impl<'window> State<'window> {
             shader_programs,
             texture_samplers: HashMap::new(),
             bindgroups: vec![],
-            resized: false, 
+            resized: false,
         }
     }
 

@@ -4,6 +4,8 @@ An 3D engine with an incremental development style.
 
 The goal of this project is to make a game engine that can be broken down into separate usable modules.
 
+**NOTE:** This is very much work in progress and most modules aren't fully fleshed out yet.
+
 # Module Hierarchy
 
 Each module builds off of other modules, hence being incremental.

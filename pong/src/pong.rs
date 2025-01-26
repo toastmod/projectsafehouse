@@ -3,6 +3,7 @@ use std::time::Duration;
 use safehouse_render::entity::NamedEntity;
 use safehouse_render::scene::{SceneObject, SceneObjectHandle};
 use tagmap::TagMap;
+use winit_app_handler::WinitApp;
 
 use crate::paddle::{self, PongCollision, PADDLE_LENGTH, PADDLE_THICK};
 use crate::render::{entity::Entity, model::ModelData, vertex_type::ColorVertex, RenderManager};

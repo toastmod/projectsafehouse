@@ -23,7 +23,7 @@ impl WinitApp for HelloSceneObject {
         let mut controller = Controller::new(None);
 
         let mut camera = Camera::new(800f32, 600f32);
-        camera.set_rot((260.0f32.to_radians(),0.0f32.to_radians()));
+        camera.set_rot((90.0f32.to_radians(),0.0f32.to_radians()));
         camera.set_pos((0.0,0.0,-5.0));
         camera.upd8(true, 0);
 

@@ -1,13 +1,13 @@
 pub mod entity;
 pub mod scene;
 
-use std::time::{Duration, Instant};
+use std::{sync::Arc, time::{Duration, Instant}};
 
 use entity::ActiveEntity;
 use safehouse_render::{camera::Camera, scene::SceneObject};
 pub use safehouse_render as render;
 pub use safehouse_render::gpu as gpu;
-use render::{gpu::winit::{self, dpi::{LogicalSize, Size}, event_loop::EventLoop, window::{Window, WindowBuilder}}, texture::DynamicTexture, RenderManager};
+use render::{gpu::winit::{self, dpi::{LogicalSize, Size}, event_loop::EventLoop, window::{Window}}, texture::DynamicTexture, RenderManager};
 use scene::{Scene, SceneEvent, SceneInit};
 
 
@@ -26,30 +26,30 @@ mod tests {
     }
 }
 
-pub struct Engine<'window, 'engine> {
-    rm: RenderManager<'window>,
+pub struct Engine<'engine> {
+    rm: RenderManager,
     last_rendered: Instant,
     dyn_texture_queue: Vec<&'engine DynamicTexture>,
     camera: Camera,
 }
 
-impl<'window, 'engine> Engine<'window, 'engine> {
+impl<'engine> Engine<'engine> {
 
-    pub fn create_window(title: &str, size: Size) -> (Window, EventLoop<()>) {
-        let event_loop = EventLoop::new().expect("Could not create event loop!");
-        let wb = WindowBuilder::new();
-        let window = wb
-        .with_title(title)
-        .with_inner_size(Size::new(LogicalSize::new(800, 600)))
-        .build(&event_loop)
-        .expect("Could not create window!");
+    // pub fn create_window(title: &str, size: Size) -> (Window, EventLoop<()>) {
+    //     let event_loop = EventLoop::new().expect("Could not create event loop!");
+    //     let wb = WindowBuilder::new();
+    //     let window = wb
+    //     .with_title(title)
+    //     .with_inner_size(Size::new(LogicalSize::new(800, 600)))
+    //     .build(&event_loop)
+    //     .expect("Could not create window!");
 
-        (window, event_loop)
-    }
+    //     (window, event_loop)
+    // }
 
-    pub fn new(window: &'window Window) -> Self {
+    pub fn new(window: &Arc<Window>) -> Self {
 
-        let rm = RenderManager::new(&window); 
+        let rm = RenderManager::new(window); 
 
         let mut engine = Self {
             rm,
@@ -75,7 +75,7 @@ impl<'window, 'engine> Engine<'window, 'engine> {
         self.rm.get_scene_object(entity.get_sceneobject_handle())
     }
 
-    pub fn event_loop(&mut self, scene: &mut Box<dyn Scene>, root_event: winit::event::Event<()>, ewt: &winit::event_loop::EventLoopWindowTarget<()>) -> SceneEvent {
+    pub fn event_loop(&mut self, scene: &mut Box<dyn Scene>, root_event: winit::event::Event<()>, ewt: &winit::event_loop::ActiveEventLoop) -> SceneEvent {
         let mut scene_event = SceneEvent::Continue;
         match root_event {
             winit::event::Event::WindowEvent { window_id, event } => match event {
@@ -94,7 +94,7 @@ impl<'window, 'engine> Engine<'window, 'engine> {
                         // println!("draw");
                         self.rm.gpu_state.update_resize();
                         self.rm.update_time();
-                        self.rm.render(self.dyn_texture_queue.as_slice(), &self.camera);
+                        self.rm.render(&self.camera);
                         if !self.dyn_texture_queue.is_empty() {
                             self.dyn_texture_queue.clear();
                         }

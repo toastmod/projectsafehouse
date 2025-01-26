@@ -15,7 +15,7 @@ impl ActiveEntity for Bunny {
 impl Entity for Bunny {
     const ENTITY_TYPE_NAME: &'static str = "Bunny";
 
-    fn on_instantiate(rm: &mut safehouse_render::RenderManager<'_>, handle: SceneObjectHandle) -> Self {
+    fn on_instantiate(rm: &mut safehouse_render::RenderManager, handle: SceneObjectHandle) -> Self {
         Bunny { handle }
     }
 

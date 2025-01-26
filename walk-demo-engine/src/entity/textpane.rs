@@ -16,7 +16,7 @@ impl TextPane {
 impl Entity for TextPane {
     const ENTITY_TYPE_NAME: &'static str = "TextPane";
 
-    fn on_instantiate(rm: &mut safehouse_render::RenderManager<'_>, handle: safehouse_render::scene::SceneObjectHandle) -> Self {
+    fn on_instantiate(rm: &mut safehouse_render::RenderManager, handle: safehouse_render::scene::SceneObjectHandle) -> Self {
         Self {
             text_texture: DynamicTexture::new_text(rm, wgpu::Color::TRANSPARENT, "This is some text, can you see it?"),
             text_texture_sampler: Rc::clone(rm.gpu_state.get_sampler("default")),

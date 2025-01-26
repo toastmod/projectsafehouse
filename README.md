@@ -19,4 +19,30 @@ These are modules that are not part of the main hierarchy, and are to be used to
 -   `safehouse-data`
     -   A build-time asset data packager.
 -   `safehouse-debug` (WIP)
-    -   A debugger that is familiar with all modules
+    -   A debugger that is familiar with all modules.
+-   `safehouse-shader` (WIP)
+    -   Tools and macros for building shaders.
+-   `slicebytes`
+    -   Basically just `cast_bytes` from the `bytemuck` crate.
+-   `winit-app-handler`
+    -   A helper for handling winit startup to reduce duplicate code.
+
+# Demos
+
+-   `pong`
+    -   A 2D demo game made from `safehouse-render`.
+    -   `cargo run --bin pong`
+
+# Examples
+
+#### `cargo run --example [name]`
+
+-   `hello-triangle`
+    -   A simple triangle with `safehouse-gpu`.
+-   `hello-sceneobject`
+    -   Similar to `hello-triangle` but made in `safehouse-render`.
+    -   (triangle spawns off screen, move around with WASD)
+-   `text-example`
+    -   Simple text rendering example in `safehouse-gpu`.
+-   `text-texture-example`
+    -   Demo of using dynamic textures in `safehouse-render`.

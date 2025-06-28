@@ -6,7 +6,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::{collections::HashMap, hash::Hash, num::NonZeroU64, rc::Rc, time::Instant};
 
-use crate::texture::{DynamicTexture, DynamicTextureHandle};
+use crate::texturetype::{DynamicTexture, DynamicTextureHandle};
 // use crate::bindgroups::BINDGROUP_SHADER;
 use crate::{camera::Camera, resource::ManagerResource};
 use crate::controller::Controller;
@@ -346,8 +346,8 @@ impl RenderManager {
                 let mut curbg_id = BINDGROUP_SCENEOBJECT+1;
                 
                 // Set model BG if there is one
-                if let Some(mbg) = obj.model_data.model_bindgroup.as_ref() {
-                    renderpass.set_bind_group(curbg_id, mbg.0.as_ref(), &[]);
+                if let Some(mbg) = obj.model_data.binding.as_ref() {
+                    renderpass.set_bind_group(curbg_id,&mbg.bindgroup, &[]);
                     curbg_id +=1;
 
                 }
@@ -425,8 +425,9 @@ impl RenderManager {
         // Note: Shader bg is currently ignored
         // let mut group_shader = BINDGROUP_SHADER;
 
-        if let Some((_,layout)) = &model.model_bindgroup {
-            total_layout.push(&layout);
+        // TODO: Model bindings
+        if let Some(bindings) = &model.binding {
+            total_layout.push(&bindings.bg_layout);
             group_model = (total_layout.len()-1) as u32;
         }
 
@@ -602,7 +603,7 @@ impl RenderManager {
 
             },
 
-            // Make the new layout
+            // TODO: Make the new layout
             None => panic!("Entity BindGroupLayout not loaded!"),
 
         };

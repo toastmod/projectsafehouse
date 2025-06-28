@@ -7,7 +7,7 @@ use entity::ActiveEntity;
 use safehouse_render::{camera::Camera, scene::SceneObject};
 pub use safehouse_render as render;
 pub use safehouse_render::gpu as gpu;
-use render::{gpu::winit::{self, dpi::{LogicalSize, Size}, event_loop::EventLoop, window::{Window}}, texture::DynamicTexture, RenderManager};
+use render::{gpu::winit::{self, dpi::{LogicalSize, Size}, event_loop::EventLoop, window::{Window}}, texturetype::DynamicTexture, RenderManager};
 use scene::{Scene, SceneEvent, SceneInit};
 
 
@@ -75,10 +75,10 @@ impl<'engine> Engine<'engine> {
         self.rm.get_scene_object(entity.get_sceneobject_handle())
     }
 
-    pub fn event_loop(&mut self, scene: &mut Box<dyn Scene>, root_event: winit::event::Event<()>, ewt: &winit::event_loop::ActiveEventLoop) -> SceneEvent {
+    pub fn event_loop(&mut self, scene: &mut Box<dyn Scene>, window_event: winit::event::WindowEvent, ewt: &winit::event_loop::ActiveEventLoop) -> SceneEvent {
         let mut scene_event = SceneEvent::Continue;
-        match root_event {
-            winit::event::Event::WindowEvent { window_id, event } => match event {
+
+        match window_event {
                 winit::event::WindowEvent::Resized(size) => self.rm.gpu_state.set_resize(size.width, size.height),
                 winit::event::WindowEvent::CloseRequested => ewt.exit(),
                 winit::event::WindowEvent::Destroyed => ewt.exit(),
@@ -103,10 +103,13 @@ impl<'engine> Engine<'engine> {
                 }
 
                 _ => (),
-            },
-            // engine::gpu::winit::event::Event::LoopExiting => todo!(),
-            _ => ()
         };
+
+        // match root_event {
+        //     winit::event::Event::WindowEvent { window_id, event } => (),
+        //     // engine::gpu::winit::event::Event::LoopExiting => todo!(),
+        //     _ => ()
+        // };
         scene_event
     }
 

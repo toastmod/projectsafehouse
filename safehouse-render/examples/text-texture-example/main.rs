@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, rc::Rc, thread::park_timeout_ms, time::{Duration, Instant}};
 use safehouse_gpu::{binding::Binder, buffer::VertexBuffer, program, texture::sampler::TextureSampler};
-use safehouse_render::{camera::Camera, entity::*, named_entity, texture::{DynamicTexture, DynamicTextureHandle, TextureType}, vertex_type::TexVertex};
+use safehouse_render::{camera::Camera, entity::*, named_entity, texturetype::{DynamicTexture, DynamicTextureHandle, TextureType}, vertex_type::TexVertex};
 pub use safehouse_render as render;
 use render::{RenderManager, gpu::{winit, wgpu, shaderprogram::Program}, model::ModelData, vertex_type::ColorVertex};
 use winit::{dpi::{LogicalSize, Size}, event_loop::EventLoop };
@@ -41,23 +41,24 @@ impl Entity for TextPane {
     }
 
     fn load_model(state: &safehouse_gpu::State) -> ModelData {
-        ModelData {
-            vertex_buffer: VertexBuffer::new(state, &[
+
+        ModelData::new::<Self,()>(
+            state, 
+            VertexBuffer::new(state, &[
                 
                 TexVertex { pos: [1.0,1.0,0.0,1.0], tex_coord: [1.0,0.0]},
                 TexVertex { pos: [-1.0,1.0,0.0,1.0], tex_coord: [0.0,0.0]},
                 TexVertex { pos: [-1.0,-1.0,0.0,1.0], tex_coord: [0.0,1.0]},
-
+    
                 TexVertex { pos: [-1.0,-1.0,0.0,1.0], tex_coord: [0.0,1.0]},
                 TexVertex { pos: [1.0,-1.0,0.0,1.0], tex_coord: [1.0,1.0]},
                 TexVertex { pos: [1.0,1.0,0.0,1.0], tex_coord: [1.0,0.0]},
-
-            ]),
-            textures: None,
-            model_bindgroup: None,
-            groups: Box::new([0..6]),
-        }
     
+            ]),
+            vec![0..6],
+            None
+        )
+
     }
 
     fn load_pipeline(rm: &safehouse_render::RenderManager) -> Option<safehouse_render::entity::EntityPipeline> {

@@ -12,6 +12,7 @@ futures = {workspace = true}
 image = {workspace = true}
 slicebytes = {workspace = true}
 glyphon = { workspace = true, optional = true, default-features = false}
+safehouse-shared = {workspace = true}
 
 [dev-dependencies]
 winit = { workspace = true, default-features = false}

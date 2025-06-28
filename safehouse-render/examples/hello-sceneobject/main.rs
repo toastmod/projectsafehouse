@@ -27,18 +27,18 @@ impl WinitApp for HelloSceneObject {
         camera.set_pos((0.0,0.0,-5.0));
         camera.upd8(true, 0);
 
-        rm.add_model("triangle", ModelData {
-            vertex_buffer: VertexBuffer::new(&rm.gpu_state, &[
+        rm.add_model("triangle_model", ModelData::new::<(),()> (
+            &rm.gpu_state,
+            VertexBuffer::new(&rm.gpu_state, &[
                 ColorVertex::new([0.0,0.5,0.0,1.0],[1.0,0.0,0.0,1.0]),
                 ColorVertex::new([0.5,-0.5,0.0,1.0],[0.0,1.0,0.0,1.0]),
                 ColorVertex::new([-0.5,-0.5,0.0,1.0],[0.0,0.0,1.0,1.0]),
             ]),
-            textures: None,
-            model_bindgroup: None,
-            groups: Box::new([0..3]),
-        });
+            vec![0..3],
+            None
+        ));
 
-        rm.add_scene_object("test triangle", "triangle", "default");
+        rm.add_scene_object("test triangle", "triangle_model", "default");
 
         let mut last_rendered = Instant::now();
 

@@ -10,6 +10,7 @@ obj-rs = {git = "https://github.com/simnalamburt/obj-rs.git", branch = "main"}
 safehouse-gpu ={ path = "safehouse-gpu" }
 safehouse-render ={ path = "safehouse-render" }
 safehouse-data ={ path = "safehouse-data" }
+safehouse-shared ={ path = "safehouse-shared" }
 winit-app-handler = {path = "winit-app-handler"}
 futures = "*"
 image = {version = "0.25.1", features = ["jpeg","png"]}

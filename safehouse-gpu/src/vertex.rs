@@ -1,3 +1,1 @@
-pub trait Vertex {
-    fn desc() -> &'static wgpu::VertexBufferLayout<'static>;
-}
+pub use safehouse_shared::vertex::Vertex;

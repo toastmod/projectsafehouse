@@ -32,8 +32,9 @@ impl Entity for Ball {
 
     fn load_model(state: &gpu::State) -> ModelData {
         
-        ModelData {
-            vertex_buffer: gpu::buffer::VertexBuffer::new(&state, &[
+        ModelData::new::<Self,()> (
+            state,
+            gpu::buffer::VertexBuffer::new(&state, &[
                 ColorVertex { pos: [-0.01,0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
                 ColorVertex { pos: [0.01,0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
                 ColorVertex { pos: [0.01,-0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
@@ -42,10 +43,9 @@ impl Entity for Ball {
                 ColorVertex { pos: [-0.01,-0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
                 ColorVertex { pos: [-0.01,0.01,0.0,1.0], color: [1.0,1.0,1.0,1.0]},
             ]),
-            textures: None,
-            model_bindgroup: None,
-            groups: Box::new([0..6])
-        }
+            vec![0..6],
+            None
+        )
         
     }
 

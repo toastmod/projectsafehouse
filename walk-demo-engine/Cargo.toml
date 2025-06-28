@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 safehouse-render = {workspace = true}
+winit-app-handler = {workspace = true}
 
 [build-dependencies]
 safehouse-data = {workspace = true}

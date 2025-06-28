@@ -9,3 +9,4 @@ edition = "2021"
 obj-rs = {git = "https://github.com/simnalamburt/obj-rs.git", branch = "main"}
 safehouse-render = {workspace = true}
 slicebytes = {workspace = true}
+safehouse-shared = {workspace = true}

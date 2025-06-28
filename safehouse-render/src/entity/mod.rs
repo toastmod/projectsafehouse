@@ -6,6 +6,8 @@ use constcat::*;
 
 pub const BINDS_STR: &'static str = "_binds";
 pub const MODEL_STR: &'static str = "_model";
+pub const MODEL_BGL_STR: &'static str = "_model_bglayout";
+pub const MODEL_BG_STR: &'static str = "_model_bindgroup";
 pub const PIPE_STR: &'static str = "_pipe";
 pub const SHADER_STR: &'static str = "_shader";
 
@@ -61,7 +63,7 @@ macro_rules! gen_const {
 #[macro_export]
 macro_rules! named_entity {
     ($t:ident) => {
-        use safehouse_render::entity::{NamedEntity, BINDS_STR, MODEL_STR, PIPE_STR, SHADER_STR};
+        use safehouse_render::entity::{NamedEntity, BINDS_STR, MODEL_STR, PIPE_STR, SHADER_STR, MODEL_BG_STR, MODEL_BGL_STR};
         use safehouse_render::gen_const;
         impl NamedEntity for $t {
             fn bindings_name() -> &'static str {
@@ -78,6 +80,14 @@ macro_rules! named_entity {
         
             fn shader_name() -> &'static str {
                 gen_const!($t, SHADER_STR)
+            }
+
+            fn model_bindgroup_name() -> &'static str {
+                gen_const!($t, MODEL_BG_STR)
+            }
+
+            fn model_bglayout_name() -> &'static str {
+                gen_const!($t, MODEL_BGL_STR)
             }
         }
     };
@@ -112,7 +122,34 @@ pub trait NamedEntity {
     fn model_name() -> &'static str;
     fn pipeline_name() -> &'static str;
     fn shader_name() -> &'static str;
+    fn model_bindgroup_name() -> &'static str;
+    fn model_bglayout_name() -> &'static str;
 
 }
 
+impl NamedEntity for () {
+    fn bindings_name() -> &'static str {
+        "?_bind"
+    }
+
+    fn model_name() -> &'static str {
+        "?_model"
+    }
+
+    fn pipeline_name() -> &'static str {
+        "?_pipe"
+    }
+
+    fn shader_name() -> &'static str {
+        "?_shader"
+    }
+
+    fn model_bindgroup_name() -> &'static str {
+        "?_model_bg"
+    }
+
+    fn model_bglayout_name() -> &'static str {
+        "?_model_bglayout"
+    }
+}
 

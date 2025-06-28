@@ -29,14 +29,14 @@ impl Entity for Paddle {
 
     fn load_model(state: &gpu::State) -> ModelData {
         let model_bytes = include_bytes!("model/paddle.dat");
-        ModelData {
-            vertex_buffer: gpu::buffer::VertexBuffer::new_from_raw::<ColorVertex>(&state, model_bytes),
-            textures: None,
-            model_bindgroup: None,
-            groups: Box::new([
+        ModelData::new::<Self,()> (
+            state,
+            gpu::buffer::VertexBuffer::new_from_raw::<ColorVertex>(&state, model_bytes),
+            vec![
                 0..(model_bytes.len()/std::mem::size_of::<ColorVertex>()) as u32
-            ])
-        }
+            ],
+            None
+        )
     }
 
     fn load_pipeline(rm: &RenderManager) -> Option<EntityPipeline> {

@@ -1,7 +1,7 @@
 
 use std::rc::Rc;
 
-use safehouse_render::{entity::Entity, gpu::{binding::Binder, buffer::VertexBuffer, program, shaderprogram::Program, texture::sampler::TextureSampler, wgpu}, model::ModelData, named_entity, texture::DynamicTexture, vertex_type::TexVertex};
+use safehouse_render::{entity::Entity, gpu::{binding::Binder, buffer::VertexBuffer, program, shaderprogram::Program, texture::sampler::TextureSampler, wgpu}, model::ModelData, named_entity, texturetype::DynamicTexture, vertex_type::TexVertex};
 struct TextPane {
     text_texture: DynamicTexture, 
     text_texture_sampler: Rc<TextureSampler> 
@@ -31,8 +31,9 @@ impl Entity for TextPane {
     }
 
     fn load_model(state: &crate::gpu::State) -> ModelData {
-        ModelData {
-            vertex_buffer: VertexBuffer::new(state, &[
+        ModelData::new::<Self,()>(
+            state,
+            VertexBuffer::new(state, &[
                 
                 TexVertex { pos: [1.0,1.0,0.0,1.0], tex_coord: [1.0,0.0]},
                 TexVertex { pos: [-1.0,1.0,0.0,1.0], tex_coord: [0.0,0.0]},
@@ -43,11 +44,9 @@ impl Entity for TextPane {
                 TexVertex { pos: [1.0,1.0,0.0,1.0], tex_coord: [1.0,0.0]},
 
             ]),
-            textures: None,
-            model_bindgroup: None,
-            groups: Box::new([0..6]),
-        }
-    
+            vec![0..6],
+            None,
+        )
     }
 
     fn load_pipeline(rm: &safehouse_render::RenderManager) -> Option<safehouse_render::entity::EntityPipeline> {

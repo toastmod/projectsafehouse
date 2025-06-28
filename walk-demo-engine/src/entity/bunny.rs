@@ -1,4 +1,6 @@
-use safehouse_render::{entity::{Entity, EntityPipeline}, gpu::{binding::Binder, buffer::VertexBuffer, program, shaderprogram::Program, wgpu::{self, PrimitiveState, ShaderStages}}, model::ModelData, named_entity, scene::SceneObjectHandle, vertex_type::TexVertex};
+use std::rc::Rc;
+
+use safehouse_render::{entity::{Entity, EntityPipeline}, gpu::{self, binding::Binder, buffer::{Uniform, VertexBuffer}, dataunit::ImageFormat, program, shaderprogram::Program, texture::Texture, wgpu::{self, PrimitiveState, ShaderStages}}, model::{ModelData, ModelResources}, named_entity, scene::SceneObjectHandle, texturetype::TextureType, vertex_type::TexVertex };
 
 use super::ActiveEntity;
 
@@ -27,12 +29,28 @@ impl Entity for Bunny {
 
     fn load_model(state: &safehouse_render::gpu::State) -> safehouse_render::model::ModelData {
         let data = include_bytes!("../model/bunny.dat");
-        ModelData {
-            vertex_buffer: VertexBuffer::new_from_raw::<TexVertex>(state, data),
-            textures: None,
-            model_bindgroup: None,
-            groups: Box::new([0..(data.len()/std::mem::size_of::<TexVertex>()) as u32]),
+
+        struct BunnyModelRes {
+            texture: Texture
         }
+
+        impl ModelResources for BunnyModelRes {
+            fn model_bindings() -> Vec<Binder<Self>> where Self: Sized {
+                vec![
+                    Binder::<BunnyModelRes>::new(0, wgpu::ShaderStages::all(), &|x| &x.texture)
+                ]
+            }
+        }
+
+        ModelData::new::<Self,BunnyModelRes>(
+            state,
+            VertexBuffer::new_from_raw::<TexVertex>(state, data),
+            vec![0..(data.len()/std::mem::size_of::<TexVertex>()) as u32],
+            Some(BunnyModelRes {
+                texture: Texture::load_encoded(state, include_bytes!("../../res/tex/test.png"), gpu::dataunit::ImageFormat::Png),
+            })
+        )
+
     }
 
     fn load_pipeline(rm: &safehouse_render::RenderManager) -> Option<safehouse_render::entity::EntityPipeline> {

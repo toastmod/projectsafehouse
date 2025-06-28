@@ -87,6 +87,8 @@ pub fn build_obj_adv(objfile_data: &'static [u8]) -> Vec<AdvVertex> {
             }
 
         }
+
+        // Pack textures for this group
     }
 
     vertices
@@ -99,6 +101,7 @@ pub fn build_obj<V>(
         &(f32,f32,f32,f32),
         Option<&(f32,f32,f32)>,
         Option<&(f32,f32,f32)>,
+        usize,
     ) -> V
 ) -> Vec<V> {
 
@@ -128,7 +131,8 @@ pub fn build_obj<V>(
                             polygon.push(polygon_f(
                                 pos,
                                 None,
-                                None
+                                None,
+                                gid
                             ));
                         }                    
                     },
@@ -139,7 +143,8 @@ pub fn build_obj<V>(
                             polygon.push(polygon_f(
                                 pos,
                                 Some(tex),
-                                None
+                                None,
+                                gid
                             ));
                         }   
                     },
@@ -150,7 +155,8 @@ pub fn build_obj<V>(
                             polygon.push(polygon_f(
                                 pos,
                                 None,
-                                Some(nor)
+                                Some(nor),
+                                gid
                             ));
                         }   
 
@@ -163,7 +169,8 @@ pub fn build_obj<V>(
                             polygon.push(polygon_f(
                                 pos,
                                 Some(tex),
-                                Some(nor)
+                                Some(nor),
+                                gid
                             ));
                         }   
 
@@ -176,6 +183,10 @@ pub fn build_obj<V>(
             }
 
         }
+
+        // Pack textures for this group
+
+
     }
 
     vertices

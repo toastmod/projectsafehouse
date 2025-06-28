@@ -6,7 +6,15 @@ The goal of this project is to make a game engine that can be broken down into s
 
 **NOTE:** This is very much work in progress and most modules aren't fully fleshed out yet.
 
-# Module Hierarchy
+## TODOs
+
+-   [ ] Multi-textured model support
+-   [ ] Shader module
+-   [ ] Skeleton/animation support
+-   [ ] Debug module
+-   [ ] Code cleanup and documentation
+
+## Module Hierarchy
 
 Each module builds off of other modules, hence being incremental.
 
@@ -14,7 +22,7 @@ Each module builds off of other modules, hence being incremental.
     -   `safehouse-render`: The rendering manager.
         -   `safehouse-gpu`: The GPU state.
 
-# External Modules
+## External Modules
 
 These are modules that are not part of the main hierarchy, and are to be used to aid development.
 
@@ -29,13 +37,15 @@ These are modules that are not part of the main hierarchy, and are to be used to
 -   `winit-app-handler`
     -   A helper for handling winit startup to reduce duplicate code.
 
-# Demos
+## Demos
 
 -   `pong`
     -   A 2D demo game made from `safehouse-render`.
     -   `cargo run --bin pong`
+-   `walk-demo-engine` (Not developed yet)
+    -   A simple third person demo engine where you can go for a walk.
 
-# Examples
+## Examples
 
 #### `cargo run --example [name]`
 

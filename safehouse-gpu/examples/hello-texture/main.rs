@@ -1,8 +1,8 @@
 use std::{rc::Rc, sync::Arc, time::{Duration, Instant}};
 
-use safehouse_gpu::{binding::Bindable, buffer::{Buffer, UniformPtr, VertexBuffer}, program, shaderprogram::Program, text, texture::Texture, vertex::Vertex, winit::{dpi::LogicalSize, event_loop::EventLoop}};
+use safehouse_gpu::{binding::Bindable, program, shaderprogram::Program, texture::Texture, vertex::Vertex};
 use safehouse_shared::vertex::TexVertex;
-use winit::{application::ApplicationHandler, window::{Window, WindowAttributes}};
+use winit::{window::{Window}};
 use winit_app_handler::{WinitApp, WinitState};
 
 #[repr(C)]
@@ -228,18 +228,5 @@ impl WinitApp for HelloTexture {
 }
 
 fn main() {
-    // let window_size = LogicalSize::new(800f64, 600f64);
-    // let event_loop = EventLoop::new().expect("Could not create window event loop.");
-    
-    // event_loop.run(move |loop_event, ewt| {
-    //     match loop_event {
-    //         winit::event::Event::WindowEvent { window_id, event } => {
-
-    //         },
-
-    //         _ => ()
-    //     }
-    // }).expect("Event loop error occured.");
     WinitState::<HelloTexture>::run();
-
 }

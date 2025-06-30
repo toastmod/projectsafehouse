@@ -14,3 +14,6 @@ safehouse-shared = {workspace = true}
 
 [dev-dependencies]
 winit-app-handler = {workspace = true}
+
+[features]
+text = ["safehouse-gpu/text"]

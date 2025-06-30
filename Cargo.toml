@@ -13,7 +13,7 @@ safehouse-data ={ path = "safehouse-data" }
 safehouse-shared ={ path = "safehouse-shared" }
 winit-app-handler = {path = "winit-app-handler"}
 futures = "*"
-image = {version = "0.25.1", features = ["jpeg","png"]}
+image = {version = "0.25.6", features = ["jpeg","png"]}
 slicebytes = { path = "./slicebytes" }
 tagmap = { git = "http://github.com/toastmod/tagmap"}
 glyphon = { git = "https://github.com/grovesNL/glyphon" }

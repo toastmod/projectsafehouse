@@ -4,58 +4,42 @@ pub mod scene;
 use std::{sync::Arc, time::{Duration, Instant}};
 
 use entity::ActiveEntity;
-use safehouse_render::{camera::Camera, scene::SceneObject};
+use safehouse_render::{camera::Camera, controller::Controller, gpu::winit::event::DeviceEvent, scene::{ControllerHandle, SceneObject}};
 pub use safehouse_render as render;
 pub use safehouse_render::gpu as gpu;
-use render::{gpu::winit::{self, dpi::{LogicalSize, Size}, event_loop::EventLoop, window::{Window}}, texturetype::DynamicTexture, RenderManager};
+use render::{gpu::winit::{self, window::{Window}}, texturetype::DynamicTexture, RenderManager};
 use scene::{Scene, SceneEvent, SceneInit};
 
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
 
 pub struct Engine<'engine> {
     rm: RenderManager,
     last_rendered: Instant,
     dyn_texture_queue: Vec<&'engine DynamicTexture>,
     camera: Camera,
+    controller: Controller,
+    pmousex: f64,
+    pmousey: f64,
 }
 
 impl<'engine> Engine<'engine> {
 
-    // pub fn create_window(title: &str, size: Size) -> (Window, EventLoop<()>) {
-    //     let event_loop = EventLoop::new().expect("Could not create event loop!");
-    //     let wb = WindowBuilder::new();
-    //     let window = wb
-    //     .with_title(title)
-    //     .with_inner_size(Size::new(LogicalSize::new(800, 600)))
-    //     .build(&event_loop)
-    //     .expect("Could not create window!");
-
-    //     (window, event_loop)
-    // }
-
     pub fn new(window: &Arc<Window>) -> Self {
 
-        let rm = RenderManager::new(window); 
+        let rm = RenderManager::new(window);         
+        rm.gpu_state.print_info();
 
-        let mut engine = Self {
+        let controller = Controller::new(None); 
+        let mut camera = Camera::new(window.inner_size().width as f32, window.inner_size().height as f32);
+        camera.upd8(true, 0);
+
+        let engine = Self {
             rm,
             last_rendered: Instant::now(),
             dyn_texture_queue: vec![],
-            camera: Camera::new(window.inner_size().width as f32, window.inner_size().height as f32),
+            camera,
+            controller,
+            pmousex: 0.0,
+            pmousey: 0.0
         };
 
         engine
@@ -75,6 +59,10 @@ impl<'engine> Engine<'engine> {
         self.rm.get_scene_object(entity.get_sceneobject_handle())
     }
 
+    pub fn update_controller(&mut self, event: DeviceEvent) {
+        self.controller.device_input(event, (self.rm.gpu_state.config.width as f32, self.rm.gpu_state.config.height as f32), 10.0);
+    }
+
     pub fn event_loop(&mut self, scene: &mut Box<dyn Scene>, window_event: winit::event::WindowEvent, ewt: &winit::event_loop::ActiveEventLoop) -> SceneEvent {
         let mut scene_event = SceneEvent::Continue;
 
@@ -83,8 +71,16 @@ impl<'engine> Engine<'engine> {
                 winit::event::WindowEvent::CloseRequested => ewt.exit(),
                 winit::event::WindowEvent::Destroyed => ewt.exit(),
                 winit::event::WindowEvent::CursorMoved { device_id, position } => {
-                    // pong.mouse_moved(&mut engine, position.x as f32, position.y as f32);
+                    // let dx = position.x - self.pmousex;
+                    // let dy = position.y - self.pmousey;
+                    // self.controller.mouse_move((dx as f32,dy as f32));
                 },
+                winit::event::WindowEvent::KeyboardInput { device_id, event, is_synthetic } => {
+                    self.controller.keyboard_input(event.logical_key, event.state.is_pressed());
+                },
+                winit::event::WindowEvent::MouseInput { device_id, state, button } => {
+                    self.controller.mouse_input(button, state.is_pressed());
+                }
                 winit::event::WindowEvent::RedrawRequested => {
                     // Update
                     scene_event = scene.update(self);
@@ -93,8 +89,8 @@ impl<'engine> Engine<'engine> {
                     if Instant::now().duration_since(self.last_rendered) >= Duration::from_millis(16) {
                         // println!("draw");
                         self.rm.gpu_state.update_resize();
-                        self.rm.update_time();
                         self.rm.render(&self.camera);
+                        self.rm.update_time();
                         if !self.dyn_texture_queue.is_empty() {
                             self.dyn_texture_queue.clear();
                         }
@@ -105,11 +101,6 @@ impl<'engine> Engine<'engine> {
                 _ => (),
         };
 
-        // match root_event {
-        //     winit::event::Event::WindowEvent { window_id, event } => (),
-        //     // engine::gpu::winit::event::Event::LoopExiting => todo!(),
-        //     _ => ()
-        // };
         scene_event
     }
 

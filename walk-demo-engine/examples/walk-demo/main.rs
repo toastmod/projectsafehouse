@@ -23,7 +23,7 @@ impl<'a> WinitApp for WalkDemo<'a> {
     }
 
     fn on_device_event(&mut self, window: &std::sync::Arc<safehouse_render::gpu::winit::window::Window>, event_loop: &safehouse_render::gpu::winit::event_loop::ActiveEventLoop, event: safehouse_render::gpu::winit::event::DeviceEvent) {
-        
+        self.engine.update_controller(event);
     }
 }
 

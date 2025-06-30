@@ -4,12 +4,11 @@ pub use super::bindgroups::{
 };
 use std::collections::VecDeque;
 use std::sync::Arc;
-use std::{collections::HashMap, hash::Hash, num::NonZeroU64, rc::Rc, time::Instant};
+use std::{collections::HashMap, num::NonZeroU64, rc::Rc, time::Instant};
 
 use crate::texturetype::{DynamicTexture, DynamicTextureHandle};
 // use crate::bindgroups::BINDGROUP_SHADER;
 use crate::{camera::Camera, resource::ManagerResource};
-use crate::controller::Controller;
 use crate::entity::{Entity, NamedEntity};
 use gpu::{buffer::{Buffer, UniformPtr}, program, shaderprogram::Program, vertex::Vertex};
 use safehouse_gpu::buffer::Uniform;
@@ -17,7 +16,7 @@ use crate::model::ModelData;
 
 pub use safehouse_gpu as gpu;
 pub use glam; 
-use crate::scene::{SceneObject, SceneObjectHandle, ControllerHandle};
+use crate::scene::{SceneObject, SceneObjectHandle};
 
 use gpu::wgpu;
 use tagmap::TagMap;
@@ -144,7 +143,7 @@ impl RenderManager {
                 var<uniform> time: f32;
 
                 @group({BINDGROUP_SCENEOBJECT}) @binding(0)
-                var<uniform> model_mat: mat4x4<f32>;
+                var<uniform> obj_mat: mat4x4<f32>;
 
                 struct ColorVertexInput {{
                     @location(0) pos: vec4<f32>,

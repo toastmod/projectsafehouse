@@ -1,20 +1,8 @@
-use crate::{binding::{Bindable, BindableType}, dataunit::*};
-use crate::dataunit::{self, *};
-// use glium::glutin::surface::WindowSurface;
-// use glium::{Display, Program};
+use image::GenericImageView;
+use wgpu::Extent3d;
+
+use crate::{binding::{Bindable, BindableType}, dataunit::*, text};
 use std::rc::Rc;
-
-// pub fn load_texture<'a>(display: &'a Display<WindowSurface>, path: &str) -> glium::texture::Texture2d {
-//     //loads texture sampler2d data
-//     let image = image::open(path).unwrap().to_rgba8();
-//     let image_dimensions = image.dimensions();
-//     let image =
-//         glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-
-//     //spit out texture obj
-//     let texture = glium::texture::Texture2d::new(display, image).unwrap();
-//     texture
-// }
 
 pub struct Texture {
     texture: Rc<wgpu::Texture>,
@@ -26,48 +14,53 @@ impl Texture {
     pub fn load_encoded<'image>(
         display: &crate::State,
         data: &'image [u8],
-        encoding_format: dataunit::ImageFormat
+        encoding_format: ImageFormat
     ) -> Texture {
 
         let image_loaded = image::load_from_memory_with_format(data, encoding_format).unwrap();
         let image_rgba = image_loaded.to_rgba8();
-        let image_dimensions = wgpu::Extent3d{
-            width: image_rgba.width(),
-            height: image_rgba.height(),
+        let (width, height) = image_loaded.dimensions();
+        let size = Extent3d {
+            width,
+            height,
             depth_or_array_layers: 1,
         };
+
+        // Match surface format
+        // TODO: Make this adjustable if some efficiency can be involved?
+        let texture_format = display.config.format.clone();
             
         let texture = display.device.create_texture(&wgpu::TextureDescriptor {
             label: None,
-            size: image_dimensions,
+            size, 
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: display.config.format.clone(),
+            format: texture_format.clone(),
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
+            view_formats: &[texture_format.clone()],
         });
             
         display.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfoBase {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             }, 
             &image_rgba, 
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * image_dimensions.width),
-                rows_per_image: Some(image_dimensions.height),
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
             }, 
-            image_dimensions
+            size.physical_size(texture_format.clone())
         );
             
         Texture {
             view: Rc::new(texture.create_view(&wgpu::TextureViewDescriptor {
                 label: None,
-                format: Some(display.config.format.clone()), 
+                format: Some(texture_format.clone()), 
                 dimension: Some(wgpu::TextureViewDimension::D2), 
                 aspect: wgpu::TextureAspect::All, 
                 base_mip_level: 0, 
@@ -113,17 +106,18 @@ impl Texture {
         });
             
         Texture {
-            view: Rc::new(texture.create_view(&wgpu::TextureViewDescriptor {
-                label: None,
-                format: Some(display.config.format.clone()), 
-                dimension: Some(wgpu::TextureViewDimension::D2), 
-                aspect: wgpu::TextureAspect::All, 
-                base_mip_level: 0, 
-                mip_level_count: None, 
-                base_array_layer: 0, 
-                array_layer_count: None,
-                usage: None, 
-            })),
+            // view: Rc::new(texture.create_view(&wgpu::TextureViewDescriptor {
+            //     label: None,
+            //     format: Some(display.config.format.clone()), 
+            //     dimension: Some(wgpu::TextureViewDimension::D2), 
+            //     aspect: wgpu::TextureAspect::All, 
+            //     base_mip_level: 0, 
+            //     mip_level_count: None, 
+            //     base_array_layer: 0, 
+            //     array_layer_count: None,
+            //     usage: None, 
+            // })),
+            view: Rc::new(texture.create_view(&wgpu::TextureViewDescriptor::default())),
             texture: Rc::new(texture),
         }
     }

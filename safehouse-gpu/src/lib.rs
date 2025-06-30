@@ -6,7 +6,7 @@ pub mod vertex;
 pub mod binding;
 use std::{collections::HashMap, rc::Rc, sync::Arc };
 use texture::sampler::TextureSampler;
-use wgpu::Backends;
+use wgpu::{BackendOptions, Backends, InstanceFlags, TextureFormat, TextureUsages};
 pub use wgpu;
 pub use winit;
 
@@ -15,7 +15,8 @@ pub mod text;
 
 #[cfg(feature="text")]
 pub use text::*;
-use winit::{application::ApplicationHandler, event_loop::ActiveEventLoop, window::{Window, WindowAttributes}};
+
+use winit::{window::{Window}};
 
 pub struct State {
     // GPU Context 
@@ -29,7 +30,6 @@ pub struct State {
     pub render_pipelines: HashMap<String, Rc<wgpu::RenderPipeline>>,
     pub texture_samplers: HashMap<String, Rc<TextureSampler>>,
     // Data bindings
-    pub bindgroups: Vec<Rc<wgpu::BindGroupLayout>>,
     pub resized: bool,
 }
 
@@ -42,7 +42,7 @@ impl State {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor { 
             backends: Backends::all(),
-            ..Default::default() 
+            ..Default::default()
         });
 
         let surface = instance.create_surface(Arc::clone(window)).unwrap();
@@ -51,24 +51,22 @@ impl State {
         .enumerate_adapters(Backends::all())
         .into_iter()
         .filter(|a|{
-            a.is_surface_supported(&surface)
+            (a.get_texture_format_features(TextureFormat::Rgba8UnormSrgb).allowed_usages != TextureUsages::empty())
+            && a.is_surface_supported(&surface)
         })
         .next()
-        .unwrap();
+        .expect("RGBA8 format not supported!");
 
         let (device, queue) = futures::executor::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
-                required_limits: wgpu::Limits {
-                    ..Default::default()
-                },
+                required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                 ..Default::default()
             },
             None,
         )).unwrap();
 
-        let surface_capabilities = surface.get_capabilities(&adapter);
-
-        let config = surface.get_default_config(&adapter, size.width, size.height).unwrap();
+        let mut config = surface.get_default_config(&adapter, size.width, size.height).unwrap();
+        config.format = TextureFormat::Rgba8UnormSrgb;
     
         surface.configure(&device, &config);
 
@@ -85,9 +83,14 @@ impl State {
             render_pipelines,
             shader_programs,
             texture_samplers: HashMap::new(),
-            bindgroups: vec![],
             resized: false,
         }
+    }
+    
+    pub fn print_info(&self) {
+        println!("=== safehouse-gpu ===");
+        println!("Config: {:?}", self.config);
+        println!("=====================");
     }
 
     pub fn set_resize(&mut self, width: u32, height: u32) {

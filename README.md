@@ -12,7 +12,12 @@ The goal of this project is to make a game engine that can be broken down into s
 -   [ ] Shader module
 -   [ ] Skeleton/animation support
 -   [ ] Debug module
+-   [ ] Advanced texture modes
+-   [ ] Other advanced modes beyond WebGL2 limits
+-   [ ] Review API design patterns
+-   [ ] Error handling
 -   [ ] Code cleanup and documentation
+-   [ ] Audio module
 
 ## Module Hierarchy
 

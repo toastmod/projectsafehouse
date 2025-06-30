@@ -65,7 +65,7 @@ impl WinitApp for HelloTexture {
             TexVertex { pos: [1.0,1.0,0.0,1.0], tex_coord: [1.0,0.0]},
             TexVertex { pos: [-1.0,1.0,0.0,1.0], tex_coord: [0.0,0.0]},
             TexVertex { pos: [-1.0,-1.0,0.0,1.0], tex_coord: [0.0,1.0]},
-
+    
             TexVertex { pos: [-1.0,-1.0,0.0,1.0], tex_coord: [0.0,1.0]},
             TexVertex { pos: [1.0,-1.0,0.0,1.0], tex_coord: [1.0,1.0]},
             TexVertex { pos: [1.0,1.0,0.0,1.0], tex_coord: [1.0,0.0]},
@@ -119,7 +119,7 @@ impl WinitApp for HelloTexture {
             vertex: wgpu::VertexState {
                 module: &prog.module,
                 entry_point: Some("vs_main"),
-                buffers: &[ColorVertex::desc().clone()],
+                buffers: &[TexVertex::desc().clone()],
                 compilation_options: Default::default(),
             }, 
             primitive: wgpu::PrimitiveState { 

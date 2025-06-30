@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use safehouse_render::{entity::{Entity, EntityPipeline}, gpu::{self, binding::Binder, buffer::{Uniform, VertexBuffer}, dataunit::ImageFormat, program, shaderprogram::Program, texture::Texture, wgpu::{self, PrimitiveState, ShaderStages}}, model::{ModelData, ModelResources}, named_entity, scene::SceneObjectHandle, texturetype::TextureType, vertex_type::TexVertex };
+use crate::render::{BINDGROUP_GLOBAL, BINDGROUP_SCENEOBJECT, entity::{Entity, EntityPipeline}, gpu::{self, binding::Binder, buffer::{Uniform, VertexBuffer}, dataunit::ImageFormat, program, shaderprogram::Program, texture::{sampler::TextureSampler, Texture}, wgpu::{self, PrimitiveState, ShaderStages}}, model::{ModelData, ModelResources}, named_entity, scene::SceneObjectHandle, texturetype::TextureType, vertex_type::TexVertex };
 
 use super::ActiveEntity;
 
@@ -22,22 +22,22 @@ impl Entity for Bunny {
     }
 
     fn load_bindings<'a>() -> Vec<safehouse_render::gpu::binding::Binder<Self>> where Self: Sized {
-        vec![
-            // Binder::<Self>::new(0, ShaderStages::VERTEX_FRAGMENT, |x| )
-        ]
+        vec![]
     }
 
     fn load_model(state: &safehouse_render::gpu::State) -> safehouse_render::model::ModelData {
         let data = include_bytes!("../model/bunny.dat");
 
         struct BunnyModelRes {
-            texture: Texture
+            texture: Texture,
+            sampler: Rc<TextureSampler>
         }
 
         impl ModelResources for BunnyModelRes {
             fn model_bindings() -> Vec<Binder<Self>> where Self: Sized {
                 vec![
-                    Binder::<BunnyModelRes>::new(0, wgpu::ShaderStages::all(), &|x| &x.texture)
+                    Binder::<BunnyModelRes>::new(0, wgpu::ShaderStages::all(), &|x| &x.texture),
+                    Binder::<BunnyModelRes>::new(1, wgpu::ShaderStages::all(), &|x| x.sampler.as_ref()),
                 ]
             }
         }
@@ -47,7 +47,8 @@ impl Entity for Bunny {
             VertexBuffer::new_from_raw::<TexVertex>(state, data),
             vec![0..(data.len()/std::mem::size_of::<TexVertex>()) as u32],
             Some(BunnyModelRes {
-                texture: Texture::load_encoded(state, include_bytes!("../../res/tex/test.png"), gpu::dataunit::ImageFormat::Png),
+                texture: Texture::load_encoded(state, include_bytes!("../../res/obj/bunny/buntex.1001.png"), gpu::dataunit::ImageFormat::Png),
+                sampler: Rc::clone(&state.get_sampler("default"))
             })
         )
 
@@ -64,6 +65,19 @@ impl Entity for Bunny {
         Some(program!(
             &rm.gpu_state,
             source: format!("
+            @group({BINDGROUP_GLOBAL}) @binding(0)
+            var<uniform> pvm: mat4x4<f32>;
+            @group({BINDGROUP_GLOBAL}) @binding(1)
+            var<uniform> time: f32;
+
+            @group({BINDGROUP_SCENEOBJECT}) @binding(0)
+            var<uniform> obj_mat: mat4x4<f32>;
+
+            @group({group_model}) @binding(0)
+            var texture: texture_2d<f32>;
+            @group({group_model}) @binding(1)
+            var tex_sampler: sampler;
+
 
             struct TexVertexIn {{
                 @location(0) pos: vec4<f32>,
@@ -78,13 +92,13 @@ impl Entity for Bunny {
             @vertex
             fn vs_main(in: TexVertexIn) -> TexVertexOut {{
                 var out: TexVertexOut;
-                out.pos = in.pos;
+                out.pos = pvm * in.pos;
                 return out;
             }}
 
             @fragment
             fn fs_main(vo: TexVertexOut) -> @location(0) vec4<f32> {{
-                return vec4<f32>(1.0,0.0,0.0,1.0); 
+                return textureSample(texture, tex_sampler, vo.tcoord); 
             }}
 
 

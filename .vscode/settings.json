@@ -1,6 +1,6 @@
 {
     "rust-analyzer.showUnlinkedFileNotification": false,
-    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.cargo.features": [],
     "lldb.displayFormat": "auto",
     "lldb.dereferencePointers": true,
     "lldb.consoleMode": "commands",

@@ -1,7 +1,7 @@
 use image::GenericImageView;
 use wgpu::Extent3d;
 
-use crate::{binding::{Bindable, BindableType}, dataunit::*, text};
+use crate::{binding::{Bindable, BindableType}, dataunit::*};
 use std::rc::Rc;
 
 pub struct Texture {

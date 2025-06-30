@@ -12,9 +12,11 @@ pub enum TextureType {
 } 
 
 enum DynamicTextureState {
+
+    #[cfg(feature="text")]
     Text(crate::gpu::TextRenderState),
     // Reflective
-    // Animated //TODO: will use texture array and a uniform
+    Animated //TODO: will use texture array and a uniform
 }
 
 pub struct DynamicTexture {
@@ -25,6 +27,7 @@ pub struct DynamicTexture {
 
 impl DynamicTexture {
 
+    #[cfg(feature="text")]
     pub fn new_text(rm: &crate::RenderManager, clear_background: crate::gpu::wgpu::Color, text: &str) -> Self {
         Self {
             texture: Rc::new(crate::gpu::texture::Texture::new_blank_dynamic(&rm.gpu_state, rm.gpu_state.config.width, rm.gpu_state.config.height)),
@@ -35,18 +38,26 @@ impl DynamicTexture {
 
     pub fn prepare(&mut self, rm: &crate::RenderManager) {
         match &mut self.dynamic_state {
+
+        #[cfg(feature="text")]
             DynamicTextureState::Text(textstate) => {
                 textstate.prepare(&rm.gpu_state)
             },
+
+            DynamicTextureState::Animated => unimplemented!()
         }
     }
 
     pub fn render_to_pass<'pass>(&'pass self, pass: &mut crate::gpu::wgpu::RenderPass<'pass>) {
 
         match &self.dynamic_state {
+
+            #[cfg(feature="text")]
             DynamicTextureState::Text(textstate) => {
                 textstate.render(pass);
             },
+
+            DynamicTextureState::Animated => unimplemented!()
         }
 
     }
